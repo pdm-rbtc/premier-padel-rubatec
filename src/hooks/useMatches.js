@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useRealtime } from './useRealtime.js'
 
 export function useMatches(filters = {}) {
-  const [matches, setMatches] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [matches, setMatches]       = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     let query = supabase
@@ -15,8 +17,6 @@ export function useMatches(filters = {}) {
     if (filters.phase)      query = query.eq('phase', filters.phase)
     if (filters.group_code) query = query.eq('group_code', filters.group_code)
     if (filters.status)     query = query.eq('status', filters.status)
-
-    // Filter to matches involving a specific couple (player portal)
     if (filters.coupleId) {
       query = query.or(`couple_a_id.eq.${filters.coupleId},couple_b_id.eq.${filters.coupleId}`)
     }
@@ -26,7 +26,11 @@ export function useMatches(filters = {}) {
       else setMatches(data ?? [])
       setLoading(false)
     })
-  }, [filters.division, filters.phase, filters.group_code, filters.status, filters.coupleId])
+  }, [filters.division, filters.phase, filters.group_code, filters.status, filters.coupleId, refreshKey])
 
-  return { matches, loading, error, setMatches }
+  // Scope the subscription to a division when possible to reduce noise
+  const realtimeFilter = filters.division ? `division=eq.${filters.division}` : null
+  const { connected } = useRealtime('matches', () => setRefreshKey(k => k + 1), realtimeFilter)
+
+  return { matches, loading, error, setMatches, connected }
 }

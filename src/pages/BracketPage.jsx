@@ -1,6 +1,8 @@
 import { useParams, Link } from 'react-router-dom'
 import GroupTable from '../components/GroupTable.jsx'
 import BracketView from '../components/BracketView.jsx'
+import LiveBadge from '../components/LiveBadge.jsx'
+import { useRealtime } from '../hooks/useRealtime.js'
 import { getDummyStandings } from '../lib/dummy.js'
 import { t } from '../i18n/index.js'
 
@@ -22,6 +24,11 @@ export default function BracketPage() {
   const { division } = useParams()
   const groups = GROUP_CODES[division] ?? []
   const style = DIVISION_STYLE[division]
+  const { connected } = useRealtime(
+    'matches',
+    () => {},   // GroupTable handles its own refetch via useStandings
+    division ? `division=eq.${division}` : null,
+  )
 
   if (!VALID_DIVISIONS.includes(division)) {
     return (
@@ -40,7 +47,10 @@ export default function BracketPage() {
           <span className="text-3xl">{style.icon}</span>
           <div>
             <h1 className="text-2xl font-bold">{t(`divisions.${division}`)}</h1>
-            <p className="text-sm opacity-75 mt-0.5">{groups.length} grupos · {groups.length * 4} parejas</p>
+            <div className="flex items-center gap-3 mt-0.5">
+              <p className="text-sm opacity-75">{groups.length} grupos · {groups.length * 4} parejas</p>
+              <LiveBadge connected={connected} />
+            </div>
           </div>
         </div>
       </div>

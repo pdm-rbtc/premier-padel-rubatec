@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth.js'
 import { signInWithGoogle, signOut } from '../lib/auth.js'
 import { useMatches } from '../hooks/useMatches.js'
 import ScoreInput from '../components/ScoreInput.jsx'
+import LiveBadge from '../components/LiveBadge.jsx'
 import { formatName } from '../lib/utils.js'
 import { t } from '../i18n/index.js'
 
@@ -47,7 +48,7 @@ export default function PlayerPortal() {
 // ── Authenticated portal ──────────────────────────────────────────────────────
 function AuthenticatedPortal() {
   const { user, profile, coupleId, loading: authLoading } = useAuth()
-  const { matches, loading: matchLoading, setMatches } = useMatches(
+  const { matches, loading: matchLoading, setMatches, connected } = useMatches(
     coupleId ? { coupleId } : {}
   )
   const [expandedMatchId, setExpandedMatchId] = useState(null)
@@ -103,9 +104,12 @@ function AuthenticatedPortal() {
             <div className="text-xs text-text-secondary">{user?.email}</div>
           </div>
         </div>
-        <button onClick={signOut} className="text-xs text-text-secondary hover:text-red-500 transition-colors">
-          Salir
-        </button>
+        <div className="flex items-center gap-3">
+          <LiveBadge connected={connected} />
+          <button onClick={signOut} className="text-xs text-text-secondary hover:text-red-500 transition-colors">
+            Salir
+          </button>
+        </div>
       </div>
 
       {isLoading && (
