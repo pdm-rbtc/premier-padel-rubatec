@@ -52,7 +52,7 @@ export default function BracketView({ division }) {
         <div>
           <h3 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
             <span className="w-3 h-px bg-gray-300 inline-block" />
-            Cuadro de consolación
+            Cuadro B
             <span className="flex-1 h-px bg-gray-100 inline-block" />
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
