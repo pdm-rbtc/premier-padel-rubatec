@@ -1,8 +1,7 @@
 # Supabase project configuration
 # https://supabase.com/docs/guides/cli/config
 
-[project]
-project_id = "jraxciajljfbzujoikgs"
+# project_id is set via `supabase link --project-ref jraxciajljfbzujoikgs`
 
 [api]
 enabled = true
@@ -14,7 +13,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [studio]
 enabled = true
@@ -37,7 +36,3 @@ refresh_token_reuse_interval = 10
 
 [auth.email]
 enable_signup = false   # No self-registration; admin pre-registers couples
-
-[auth.external.google]
-enabled = true
-# client_id and secret are set via environment / Supabase dashboard

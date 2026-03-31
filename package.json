@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:push": "supabase db push --project-ref jraxciajljfbzujoikgs"
+    "db:migrate": "bash scripts/db-migrate.sh"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
