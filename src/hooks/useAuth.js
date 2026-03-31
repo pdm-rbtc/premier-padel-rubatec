@@ -4,6 +4,7 @@ import { isAdmin } from '../lib/auth.js'
 
 export function useAuth() {
   const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)   // { couple_id, role } from public.users
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -19,5 +20,23 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  return { user, loading, isAdmin: isAdmin(user) }
+  // Fetch profile (couple_id, role) whenever the authenticated user changes
+  useEffect(() => {
+    if (!user) { setProfile(null); return }
+
+    supabase
+      .from('users')
+      .select('couple_id, role, display_name, avatar_url')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => setProfile(data ?? null))
+  }, [user?.id])
+
+  return {
+    user,
+    profile,
+    loading,
+    coupleId: profile?.couple_id ?? null,
+    isAdmin: isAdmin(user),
+  }
 }
