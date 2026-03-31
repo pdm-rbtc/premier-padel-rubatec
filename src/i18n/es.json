@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "bracket": "Cuadros",
+    "portal": "Mi Portal",
+    "admin": "Admin",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión"
+  },
+  "home": {
+    "title": "3r Torneo Premium Pádel Rubatec",
+    "subtitle": "Bienvenido al torneo",
+    "divisions": "Divisiones"
+  },
+  "divisions": {
+    "diamant": "División Diamant",
+    "or": "División Or",
+    "plata": "División Plata"
+  },
+  "match": {
+    "court": "Pista",
+    "vs": "vs",
+    "status": {
+      "scheduled": "Programado",
+      "pending_confirmation": "Pendiente confirmación",
+      "confirmed": "Confirmado",
+      "disputed": "En disputa",
+      "bye": "Bye",
+      "walkover": "Walkover"
+    },
+    "submit_score": "Enviar resultado",
+    "confirm_score": "Confirmar resultado",
+    "dispute_score": "Disputar resultado"
+  },
+  "portal": {
+    "my_matches": "Mis partidos",
+    "next_match": "Próximo partido",
+    "no_matches": "No tienes partidos asignados"
+  },
+  "admin": {
+    "dashboard": "Panel de administración",
+    "couples": "Parejas",
+    "matches": "Partidos",
+    "brackets": "Cuadros"
+  },
+  "errors": {
+    "not_authorized": "No tienes permiso para esta acción",
+    "not_found": "No encontrado"
+  }
+}
