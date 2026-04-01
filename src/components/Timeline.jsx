@@ -37,7 +37,7 @@ export default function Timeline() {
       marginBottom: 14,
       overflowX: 'auto',
     }}>
-      <div style={{ display: 'flex', gap: 0, minWidth: 560, alignItems: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 0, minWidth: 560, alignItems: 'flex-start' }}>
         {SLOTS.map(s => {
           const active = s.s === cur
           const done   = s.s < cur

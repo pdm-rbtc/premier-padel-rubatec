@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { t } from '../i18n/index.js'
+import { useI18n } from '../i18n/index.jsx'
 
 export default function MatchCard({ match }) {
+  const { t } = useI18n()
   const statusColors = {
     scheduled: 'bg-gray-100 text-gray-600',
     pending_confirmation: 'bg-yellow-100 text-yellow-700',

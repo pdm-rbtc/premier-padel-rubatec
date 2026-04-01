@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { signInWithGoogle } from '../lib/auth.js'
+import { useI18n } from '../i18n/index.jsx'
 import LiveTicker from './LiveTicker.jsx'
 
 function Isotype() {
@@ -26,6 +27,7 @@ function Isotype() {
 export default function Layout() {
   const { user, isAdmin } = useAuth()
   const { pathname } = useLocation()
+  const { t, lang, setLang } = useI18n()
   const onPortal = pathname.startsWith('/portal')
   const onAdmin  = pathname.startsWith('/admin')
 
@@ -83,14 +85,35 @@ export default function Layout() {
               </p>
             </div>
 
-            {/* Nav tabs */}
-            <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
-              <Link to="/" style={tabCls(!onPortal && !onAdmin)}>🏆 Torneo</Link>
-              {user
-                ? <Link to="/portal" style={tabCls(onPortal)}>👤 Mi Portal</Link>
-                : <button onClick={signInWithGoogle} style={tabCls(false)}>👤 Mi Portal</button>
-              }
-              {isAdmin && <Link to="/admin" style={tabCls(onAdmin)}>⚙️ Admin</Link>}
+            {/* Nav tabs + language toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, marginTop: 5 }}>
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                <Link to="/" style={tabCls(!onPortal && !onAdmin)}>🏆 {t('nav.torneo')}</Link>
+                {user
+                  ? <Link to="/portal" style={tabCls(onPortal)}>👤 {t('nav.portal')}</Link>
+                  : <button onClick={signInWithGoogle} style={tabCls(false)}>👤 {t('nav.portal')}</button>
+                }
+                {isAdmin && <Link to="/admin" style={tabCls(onAdmin)}>⚙️ {t('nav.admin')}</Link>}
+              </div>
+              {/* Language toggle */}
+              <div style={{ display: 'flex', gap: 3 }}>
+                {['es', 'ca'].map(l => (
+                  <button key={l} onClick={() => setLang(l)} style={{
+                    padding: '3px 9px',
+                    borderRadius: 6,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    letterSpacing: '0.5px',
+                    background: lang === l ? 'rgba(17,239,181,.2)' : 'rgba(255,255,255,.06)',
+                    color: lang === l ? '#11efb5' : 'rgba(255,255,255,.35)',
+                    transition: 'all .2s',
+                  }}>
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

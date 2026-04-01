@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
 import ScoreInput from '../components/ScoreInput.jsx'
-import { t } from '../i18n/index.js'
+import { useI18n } from '../i18n/index.jsx'
 
 export default function MatchDetail() {
+  const { t } = useI18n()
   const { id } = useParams()
   const { user } = useAuth()
   const [match, setMatch] = useState(null)

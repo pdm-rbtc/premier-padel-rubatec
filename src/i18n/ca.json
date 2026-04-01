@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "torneo": "Torneig",
+    "portal": "El Meu Portal",
+    "admin": "Admin",
+    "login": "Iniciar sessió",
+    "logout": "Tancar sessió"
+  },
+  "home": {
+    "title": "3r Torneig Premium Pàdel Rubatec",
+    "subtitle": "Benvingut al torneig",
+    "divisions": "Divisions"
+  },
+  "divisions": {
+    "diamant": "Divisió Diamant",
+    "or": "Divisió Or",
+    "plata": "Divisió Plata"
+  },
+  "match": {
+    "court": "Pista",
+    "vs": "vs",
+    "status": {
+      "scheduled": "Programat",
+      "pending_confirmation": "Pendent confirmació",
+      "confirmed": "Confirmat",
+      "disputed": "En disputa",
+      "bye": "Bye",
+      "walkover": "Walkover"
+    },
+    "submit_score": "Enviar resultat",
+    "confirm_score": "Confirmar resultat",
+    "dispute_score": "Disputar resultat"
+  },
+  "portal": {
+    "my_matches": "Els meus partits",
+    "next_match": "Proper partit",
+    "no_matches": "No tens partits assignats"
+  },
+  "admin": {
+    "dashboard": "Tauler d'administració",
+    "couples": "Parelles",
+    "matches": "Partits",
+    "brackets": "Quadres"
+  },
+  "errors": {
+    "not_authorized": "No tens permís per a aquesta acció",
+    "not_found": "No trobat"
+  }
+}

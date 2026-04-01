@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { signInWithGoogle, signOut } from '../lib/auth.js'
-import { t } from '../i18n/index.js'
+import { useI18n } from '../i18n/index.jsx'
 
 const AUTH_BTN_DESKTOP = 'bg-accent text-primary px-3 py-1.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity'
 const AUTH_BTN_MOBILE  = 'w-full text-center bg-accent text-primary px-4 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity'
 
 export default function Navbar() {
   const { user, isAdmin } = useAuth()
+  const { t } = useI18n()
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
 

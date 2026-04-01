@@ -6,7 +6,7 @@ import { useMatches } from '../hooks/useMatches.js'
 import ScoreInput from '../components/ScoreInput.jsx'
 import LiveBadge from '../components/LiveBadge.jsx'
 import { formatName } from '../lib/utils.js'
-import { t } from '../i18n/index.js'
+import { useI18n } from '../i18n/index.jsx'
 
 // ── Status badge config ───────────────────────────────────────────────────────
 const ST_CFG = {
@@ -35,6 +35,7 @@ function StatusBadge({ status }) {
 
 // ── Login gate ────────────────────────────────────────────────────────────────
 export default function PlayerPortal() {
+  const { t } = useI18n()
   const { user, loading } = useAuth()
 
   if (loading) return null
