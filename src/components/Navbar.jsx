@@ -5,6 +5,9 @@ import { signInWithGoogle, signOut } from '../lib/auth.js'
 import { DIVISION_CONFIG, DIVISIONS } from '../lib/divisions.js'
 import { t } from '../i18n/index.js'
 
+const AUTH_BTN_DESKTOP = 'bg-accent text-primary px-3 py-1.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity'
+const AUTH_BTN_MOBILE  = 'w-full text-center bg-accent text-primary px-4 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity'
+
 export default function Navbar() {
   const { user, isAdmin } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -19,15 +22,6 @@ export default function Navbar() {
     ...(isAdmin ? [{ to: '/admin',  label: t('nav.admin')  }] : []),
   ]
 
-  function AuthButton({ mobile }) {
-    const cls = mobile
-      ? 'w-full text-center bg-accent text-primary px-4 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity'
-      : 'bg-accent text-primary px-3 py-1.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity'
-    return user
-      ? <button onClick={() => { signOut(); close() }} className={cls}>{t('nav.logout')}</button>
-      : <button onClick={() => { signInWithGoogle(); close() }} className={cls}>{t('nav.login')}</button>
-  }
-
   return (
     <nav className="bg-primary text-white shadow-md relative z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -40,14 +34,15 @@ export default function Navbar() {
           {navLinks.map(l => (
             <Link key={l.to} to={l.to}
               className={`transition-colors ${
-                isActive(l.to)
-                  ? 'text-accent font-semibold'
-                  : 'text-white/80 hover:text-white'
+                isActive(l.to) ? 'text-accent font-semibold' : 'text-white/80 hover:text-white'
               }`}>
               {l.label}
             </Link>
           ))}
-          <AuthButton mobile={false} />
+          {user
+            ? <button onClick={signOut} className={AUTH_BTN_DESKTOP}>{t('nav.logout')}</button>
+            : <button onClick={signInWithGoogle} className={AUTH_BTN_DESKTOP}>{t('nav.login')}</button>
+          }
         </div>
 
         {/* Mobile hamburger */}
@@ -82,7 +77,10 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="pt-2">
-            <AuthButton mobile={true} />
+            {user
+              ? <button onClick={() => { signOut(); close() }} className={AUTH_BTN_MOBILE}>{t('nav.logout')}</button>
+              : <button onClick={() => { signInWithGoogle(); close() }} className={AUTH_BTN_MOBILE}>{t('nav.login')}</button>
+            }
           </div>
         </div>
       )}
