@@ -21,6 +21,13 @@ export default function AdminDashboard() {
 
 function DashboardContent() {
   const [stats, setStats] = useState(null)
+  const [resetting, setResetting] = useState(false)
+
+  async function handleReset() {
+    setResetting(true)
+    await supabase.rpc('reset_test_data')
+    setResetting(false)
+  }
 
   useEffect(() => {
     Promise.all([
@@ -83,6 +90,28 @@ function DashboardContent() {
             <div className="text-xs text-text-secondary mt-1">{s.desc}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Reset test data */}
+      <div style={{background:'white',borderRadius:14,padding:'16px 20px',boxShadow:'0 1px 4px rgba(0,29,114,.05)',borderTop:'3px solid #f1f5f9'}}>
+        <div style={{fontSize:12,fontWeight:700,color:'#001d72',marginBottom:4}}>Datos de prueba</div>
+        <p style={{fontSize:11,color:'#64748b',marginBottom:12}}>
+          Restaura los partidos de prueba al estado inicial (pareja De Mora / Villanueva en Plata G1).
+        </p>
+        <button onClick={handleReset} disabled={resetting}
+          style={{
+            background: resetting ? '#f1f5f9' : '#fef2f2',
+            color: resetting ? '#94a3b8' : '#ef4444',
+            border: '1px solid',
+            borderColor: resetting ? '#e2e8f0' : '#fecaca',
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: resetting ? 'default' : 'pointer',
+          }}>
+          {resetting ? 'Restaurando…' : '↺ Restaurar datos de prueba'}
+        </button>
       </div>
     </div>
   )

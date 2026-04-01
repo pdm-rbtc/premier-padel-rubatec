@@ -7,19 +7,22 @@ export const DIVISION_CONFIG = {
     label:     'Diamante',
     fullLabel: 'División Diamante',
     icon:      '💎',
+    color:     '#0433FF',
     gradient:  'from-[#001d72] to-[#0433FF]',
   },
   or: {
     label:     'Oro',
     fullLabel: 'División Oro',
     icon:      '🥇',
-    gradient:  'from-yellow-600 to-yellow-400',
+    color:     '#ff8000',
+    gradient:  'from-[#001d72] to-[#ff8000]',
   },
   plata: {
     label:     'Plata',
     fullLabel: 'División Plata',
     icon:      '🥈',
-    gradient:  'from-slate-500 to-slate-300',
+    color:     '#94a3b8',
+    gradient:  'from-[#001d72] to-[#94a3b8]',
   },
 }
 

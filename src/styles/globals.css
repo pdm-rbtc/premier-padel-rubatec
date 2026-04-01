@@ -14,7 +14,34 @@
 }
 
 body {
-  background-color: var(--color-bg);
+  background: linear-gradient(170deg, #f0f2f8 0%, #e4e9f2 50%, #dfe5f0 100%);
+  background-attachment: fixed;
   color: var(--color-text-primary);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Pulse animation for LiveTicker red dot */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.2); }
 }

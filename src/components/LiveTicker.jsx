@@ -1,74 +1,100 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { DIVISION_CONFIG } from '../lib/divisions.js'
-import { useRealtime } from '../hooks/useRealtime.js'
 
-async function fetchActiveMatches() {
+const DUMMY_ITEMS = [
+  { court: 'Pista 3',  div: 'Diamante G3', score: '4-3' },
+  { court: 'Pista 7',  div: 'Oro G2',      score: '5-4' },
+  { court: 'Pista 11', div: 'Plata G3',    score: '2-1' },
+]
+
+async function fetchLiveMatches() {
   const { data } = await supabase
     .from('matches')
-    .select(`
-      id, court, division, group_code, round,
-      score_a, score_b, status,
-      couple_a:couple_a_id(team_name),
-      couple_b:couple_b_id(team_name)
-    `)
+    .select('court, division, group_code, score_a, score_b, status, couple_a:couple_a_id(team_name), couple_b:couple_b_id(team_name)')
     .in('status', ['pending_confirmation', 'confirmed'])
     .order('confirmed_at', { ascending: false })
-    .limit(12)
+    .limit(8)
   return data ?? []
 }
 
-function formatItem(match) {
-  const divLabel = DIVISION_CONFIG[match.division]?.label ?? match.division
-  const loc = match.group_code
-    ? `${divLabel} ${match.group_code}`
-    : divLabel
-  const court = match.court ? `${match.court} · ` : ''
-  const score = match.score_a ? ` ${match.score_a}–${match.score_b}` : ''
-  return `${court}${loc}${score}`
-}
-
 export default function LiveTicker() {
-  const [matches, setMatches] = useState([])
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [items, setItems] = useState(DUMMY_ITEMS)
+  const [offset, setOffset] = useState(0)
 
   useEffect(() => {
-    fetchActiveMatches().then(setMatches)
-  }, [refreshKey])
+    fetchLiveMatches().then(data => {
+      if (data.length > 0) {
+        setItems(data.map(m => ({
+          court: m.court ?? '',
+          div: `${DIVISION_CONFIG[m.division]?.label ?? m.division}${m.group_code ? ' ' + m.group_code : ''}`,
+          score: m.score_a ? `${m.score_a}` : '',
+        })))
+      }
+    })
+  }, [])
 
-  useRealtime('matches', () => setRefreshKey(k => k + 1))
+  useEffect(() => {
+    const t = setInterval(() => setOffset(v => v - 0.8), 30)
+    return () => clearInterval(t)
+  }, [])
 
-  const liveCount = matches.filter(m => m.status === 'pending_confirmation').length
-
-  const items = matches.length > 0
-    ? matches.map(formatItem)
-    : [
-        'Torneo en curso',
-        'Los marcadores aparecerán aquí en tiempo real',
-        '3r Torneo Premium Pádel Rubatec',
-      ]
-
-  // Duplicate for seamless infinite loop
-  const tickerItems = [...items, ...items]
+  const displayItems = [...items, ...items, ...items, ...items]
+  const liveCount = items === DUMMY_ITEMS ? 3 : items.length
 
   return (
-    <div className="bg-[#001050] text-white text-xs flex items-stretch overflow-hidden select-none">
-      {/* Fixed badge */}
-      <div className="shrink-0 flex items-center gap-1.5 bg-accent text-primary font-bold px-3 py-2 z-10">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-        EN DIRECTO{liveCount > 0 ? ` ${liveCount}` : ''}
+    <div style={{
+      background: 'linear-gradient(90deg,#001d72,#0433FF)',
+      padding: '8px 0',
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
+      {/* Fixed "EN DIRECTO" label */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        padding: '8px 12px',
+        zIndex: 2,
+        background: 'linear-gradient(90deg,#001050 80%,transparent)',
+        height: '100%',
+        boxSizing: 'border-box',
+      }}>
+        <span style={{
+          background: '#ef4444',
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          animation: 'pulse 1.5s infinite',
+          display: 'inline-block',
+          flexShrink: 0,
+        }} />
+        <span style={{ color: 'white', fontSize: 10, fontWeight: 700, letterSpacing: '1px', whiteSpace: 'nowrap' }}>
+          EN DIRECTO{liveCount > 0 ? ` ${liveCount}` : ''}
+        </span>
       </div>
 
       {/* Scrolling strip */}
-      <div className="overflow-hidden flex-1 flex items-center">
-        <div className="flex animate-ticker">
-          {tickerItems.map((item, i) => (
-            <span key={i} className="whitespace-nowrap px-6 opacity-90">
-              {item}
-              <span className="ml-6 opacity-30">·</span>
-            </span>
-          ))}
-        </div>
+      <div style={{
+        display: 'flex',
+        gap: 50,
+        whiteSpace: 'nowrap',
+        transform: `translateX(${offset % 1400}px)`,
+        marginLeft: 130,
+      }}>
+        {displayItems.map((m, i) => (
+          <span key={i} style={{ color: 'rgba(255,255,255,.85)', fontSize: 11 }}>
+            <span style={{ color: '#11efb5', fontWeight: 600 }}>{m.court}</span>
+            {m.court && ' · '}
+            {m.div}
+            {m.score && (
+              <span style={{ color: '#11efb5', fontWeight: 700 }}> {m.score}</span>
+            )}
+          </span>
+        ))}
       </div>
     </div>
   )

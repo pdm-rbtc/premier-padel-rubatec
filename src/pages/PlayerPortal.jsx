@@ -8,11 +8,29 @@ import LiveBadge from '../components/LiveBadge.jsx'
 import { formatName } from '../lib/utils.js'
 import { t } from '../i18n/index.js'
 
-const STATUS_LABEL = {
-  scheduled:            { text: 'Pendiente',           bg: 'bg-gray-100',    color: 'text-gray-500' },
-  pending_confirmation: { text: 'Pend. confirmación',  bg: 'bg-yellow-100',  color: 'text-yellow-700' },
-  confirmed:            { text: 'Confirmado',           bg: 'bg-green-100',   color: 'text-green-700' },
-  disputed:             { text: 'En disputa',           bg: 'bg-red-100',     color: 'text-red-600' },
+// ── Status badge config ───────────────────────────────────────────────────────
+const ST_CFG = {
+  confirmed:            { bg: 'rgba(17,239,181,.12)',   color: '#0cb882',  text: '✓ Confirmado'   },
+  pending_confirmation: { bg: 'rgba(255,128,0,.10)',    color: '#ff8000',  text: '⏳ Pendiente'   },
+  scheduled:            { bg: 'rgba(100,116,139,.08)',  color: '#94a3b8',  text: '· Programado'   },
+  disputed:             { bg: 'rgba(239,68,68,.10)',    color: '#ef4444',  text: '⚠ Disputado'    },
+}
+
+function StatusBadge({ status }) {
+  const cfg = ST_CFG[status] ?? ST_CFG.scheduled
+  return (
+    <span style={{
+      background: cfg.bg,
+      color: cfg.color,
+      fontSize: 9,
+      fontWeight: 600,
+      padding: '3px 7px',
+      borderRadius: 20,
+      whiteSpace: 'nowrap',
+    }}>
+      {cfg.text}
+    </span>
+  )
 }
 
 // ── Login gate ────────────────────────────────────────────────────────────────
@@ -23,21 +41,43 @@ export default function PlayerPortal() {
 
   if (!user) {
     return (
-      <div className="max-w-sm mx-auto text-center py-20 space-y-6">
-        <div className="text-5xl">🎾</div>
-        <div>
-          <h1 className="text-xl font-bold text-primary">Mi Portal</h1>
-          <p className="text-text-secondary mt-1 text-sm">
-            Inicia sesión con tu cuenta <span className="font-medium">@rubatec.cat</span> para ver tus partidos.
+      <div style={{ maxWidth: 380, margin: '60px auto 0', textAlign: 'center' }}>
+        <div style={{
+          background: 'white',
+          borderRadius: 20,
+          padding: '40px 32px',
+          boxShadow: '0 4px 24px rgba(0,29,114,.08)',
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🎾</div>
+          <h1 style={{ color: '#001d72', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Mi Portal</h1>
+          <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.5, margin: '0 0 28px' }}>
+            Inicia sesión con tu cuenta{' '}
+            <span style={{ fontWeight: 600, color: '#001d72' }}>@rubatec.cat</span>{' '}
+            para ver tus partidos y enviar resultados.
           </p>
+          <button
+            onClick={signInWithGoogle}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              background: 'white',
+              border: '1px solid #e2e8f0',
+              color: '#0f172a',
+              padding: '12px 20px',
+              borderRadius: 12,
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+            }}
+          >
+            <GoogleIcon />
+            Iniciar sesión con Google
+          </button>
         </div>
-        <button
-          onClick={signInWithGoogle}
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-text-primary px-5 py-3 rounded-xl font-semibold shadow-sm hover:shadow-md transition-shadow"
-        >
-          <GoogleIcon />
-          Iniciar sesión con Google
-        </button>
       </div>
     )
   }
@@ -65,7 +105,18 @@ function AuthenticatedPortal() {
 
   const nextMatch = sorted.find(m => m.status === 'scheduled')
 
-  // Called after score submission — update match in local state
+  // Couple info for display
+  const myCouple = matches.length > 0
+    ? (matches[0].couple_a_id === coupleId ? matches[0].couple_a : matches[0].couple_b)
+    : null
+
+  const wins   = matches.filter(m => m.winner_id === coupleId).length
+  const losses = matches.filter(m => m.status === 'confirmed' && m.winner_id && m.winner_id !== coupleId).length
+  const divisionMatch = matches[0]
+  const divLabel = divisionMatch
+    ? `División ${divisionMatch.division?.charAt(0).toUpperCase()}${divisionMatch.division?.slice(1) ?? ''} · Grupo ${divisionMatch.group_code ?? '—'}`
+    : null
+
   function handleScoreSubmitted(matchId) {
     setMatches(prev => prev.map(m =>
       m.id === matchId ? { ...m, status: 'pending_confirmation' } : m
@@ -73,7 +124,6 @@ function AuthenticatedPortal() {
     setExpandedMatchId(null)
   }
 
-  // Called after confirmation/dispute — update match in local state
   async function handleConfirm(matchId) {
     const { error } = await supabase.rpc('confirm_match', {
       p_match_id: matchId,
@@ -90,73 +140,196 @@ function AuthenticatedPortal() {
   const displayName = profile?.display_name ?? user?.user_metadata?.full_name ?? user?.email
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      {/* Profile header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div style={{ maxWidth: 460, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* User info strip */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {user?.user_metadata?.avatar_url ? (
             <img src={user.user_metadata.avatar_url} alt=""
-              className="w-10 h-10 rounded-full border border-gray-100" />
+              style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #e2e8f0' }} />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: 'rgba(0,29,114,.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#001d72', fontWeight: 700, fontSize: 12,
+            }}>
               {displayName?.[0]?.toUpperCase()}
             </div>
           )}
-          <div>
-            <div className="font-semibold text-text-primary leading-tight">{displayName}</div>
-            <div className="text-xs text-text-secondary">{user?.email}</div>
-          </div>
+          <span style={{ fontSize: 12, color: '#64748b' }}>{user?.email}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <LiveBadge connected={connected} />
-          <button onClick={signOut} className="text-xs text-text-secondary hover:text-red-500 transition-colors">
+          <button onClick={signOut} style={{
+            fontSize: 11, color: '#94a3b8', background: 'none', border: 'none',
+            cursor: 'pointer', padding: '2px 6px', borderRadius: 6,
+          }}>
             Salir
           </button>
         </div>
       </div>
 
       {isLoading && (
-        <div className="text-center py-10 text-text-secondary text-sm">Cargando…</div>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8', fontSize: 13 }}>
+          Cargando…
+        </div>
       )}
 
       {!isLoading && !coupleId && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
+        <div style={{
+          background: 'rgba(255,248,230,.8)',
+          border: '1px solid rgba(255,128,0,.2)',
+          borderRadius: 12,
+          padding: '14px 16px',
+          fontSize: 12,
+          color: '#92400e',
+          lineHeight: 1.5,
+        }}>
           Tu cuenta aún no está vinculada a ninguna pareja. Contacta con el administrador del torneo.
         </div>
       )}
 
       {!isLoading && coupleId && (
         <>
-          {/* Next match hero */}
-          {nextMatch && (
-            <div className="bg-gradient-to-br from-primary to-secondary rounded-2xl p-5 text-white">
-              <p className="text-xs font-semibold text-accent/90 uppercase tracking-widest mb-2">
-                Próximo partido
-              </p>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="font-bold text-lg leading-tight truncate">
-                  {nextMatch.couple_a?.team_name}
-                </span>
-                <span className="text-white/50 text-sm shrink-0">vs</span>
-                <span className="font-bold text-lg leading-tight truncate text-right">
-                  {nextMatch.couple_b?.team_name}
-                </span>
+          {/* MI PAREJA gradient card */}
+          <div style={{
+            background: 'linear-gradient(135deg,#001d72,#0433FF)',
+            borderRadius: 16,
+            padding: '18px 20px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Decorative circle */}
+            <div style={{
+              position: 'absolute', top: -30, right: -30,
+              width: 120, height: 120, borderRadius: '50%',
+              background: 'radial-gradient(circle,rgba(17,239,181,.18) 0%,transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+            <div style={{ position: 'relative' }}>
+              <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 10, letterSpacing: 1, fontWeight: 500, marginBottom: 6 }}>
+                MI PAREJA
               </div>
-              <div className="flex items-center gap-3 text-sm text-white/80">
-                {nextMatch.time_slot && <span>{nextMatch.time_slot}</span>}
-                {nextMatch.court && <span>· {nextMatch.court}</span>}
+              <div style={{ color: 'white', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
+                {myCouple?.team_name ?? displayName}
+              </div>
+              {(divLabel || wins + losses > 0) && (
+                <div style={{ color: '#11efb5', fontSize: 11 }}>
+                  {divLabel ?? ''}
+                  {wins + losses > 0 && ` · ${wins}G ${losses}P`}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* PRÓXIMO PARTIDO */}
+          {nextMatch && (
+            <div style={{
+              background: 'white',
+              borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,29,114,.05)',
+            }}>
+              <div style={{ padding: '10px 14px 0' }}>
+                <div style={{ color: '#94a3b8', fontSize: 10, fontWeight: 600, letterSpacing: .5, marginBottom: 8 }}>
+                  PRÓXIMO PARTIDO
+                </div>
+              </div>
+              {/* Court + time + badge */}
+              <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: '#64748b' }}>
+                  {nextMatch.court && <span style={{ color: '#11efb5', fontWeight: 600 }}>{nextMatch.court}</span>}
+                  {nextMatch.court && nextMatch.time_slot && ' · '}
+                  {nextMatch.time_slot && <span>{nextMatch.time_slot}</span>}
+                </div>
+                <StatusBadge status={nextMatch.status} />
+              </div>
+              {/* VS layout */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                padding: '0 14px 16px',
+              }}>
+                <div style={{ flex: 1, textAlign: 'right' }}>
+                  {nextMatch.couple_a_id === coupleId && (
+                    <div style={{ fontSize: 9, fontWeight: 600, color: '#11efb5', marginBottom: 2 }}>Tu pareja</div>
+                  )}
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>
+                    {nextMatch.couple_a?.team_name}
+                  </div>
+                </div>
+                <div style={{
+                  background: '#f1f5f9',
+                  borderRadius: 8,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: '#64748b',
+                  flexShrink: 0,
+                }}>
+                  VS
+                </div>
+                <div style={{ flex: 1 }}>
+                  {nextMatch.couple_b_id === coupleId && (
+                    <div style={{ fontSize: 9, fontWeight: 600, color: '#11efb5', marginBottom: 2 }}>Tu pareja</div>
+                  )}
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>
+                    {nextMatch.couple_b?.team_name}
+                  </div>
+                </div>
+              </div>
+              {/* Submit button */}
+              <div style={{ padding: '0 14px 14px' }}>
+                <button
+                  onClick={() => setExpandedMatchId(
+                    expandedMatchId === nextMatch.id ? null : nextMatch.id
+                  )}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg,#11efb5,#0cb882)',
+                    color: '#001d72',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    borderRadius: 12,
+                    border: 'none',
+                    padding: '12px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(17,239,181,.25)',
+                  }}
+                >
+                  {expandedMatchId === nextMatch.id ? 'Cancelar' : '🎾 Enviar resultado'}
+                </button>
+                {expandedMatchId === nextMatch.id && (
+                  <div style={{ marginTop: 10 }}>
+                    <ScoreInput
+                      match={nextMatch}
+                      onSuccess={() => handleScoreSubmitted(nextMatch.id)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Match list */}
+          {/* Match history */}
           {matches.length === 0 ? (
-            <p className="text-text-secondary text-sm text-center py-8">
+            <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>
               {t('portal.no_matches')}
             </p>
           ) : (
-            <div className="space-y-3">
-              {sorted.map(match => (
+            <div style={{
+              background: 'white',
+              borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,29,114,.05)',
+            }}>
+              <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#001d72' }}>
+                Historial
+              </div>
+              {sorted.map((match, idx) => (
                 <MatchRow
                   key={match.id}
                   match={match}
@@ -168,10 +341,24 @@ function AuthenticatedPortal() {
                   onScoreSubmitted={() => handleScoreSubmitted(match.id)}
                   onConfirm={() => handleConfirm(match.id)}
                   onDispute={() => handleDispute(match.id)}
+                  isLast={idx === sorted.length - 1}
                 />
               ))}
             </div>
           )}
+
+          {/* Info box */}
+          <div style={{
+            background: 'rgba(255,255,255,.7)',
+            border: '1px solid #eef2f7',
+            borderRadius: 10,
+            padding: '10px 14px',
+            fontSize: 11,
+            color: '#64748b',
+            lineHeight: 1.5,
+          }}>
+            Envía el resultado después de cada partido. Tu rival deberá confirmarlo. En caso de desacuerdo, el administrador resolverá la disputa.
+          </div>
         </>
       )}
     </div>
@@ -179,92 +366,158 @@ function AuthenticatedPortal() {
 }
 
 // ── Individual match row ──────────────────────────────────────────────────────
-function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted, onConfirm, onDispute }) {
-  const sl = STATUS_LABEL[match.status] ?? STATUS_LABEL.scheduled
-  const isSubmitter = match.submitted_by === coupleId
+function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted, onConfirm, onDispute, isLast }) {
+  const isSubmitter  = match.submitted_by === coupleId
   const isParticipant = match.couple_a_id === coupleId || match.couple_b_id === coupleId
-  const canSubmit   = match.status === 'scheduled' && isParticipant
-  const canConfirm  = match.status === 'pending_confirmation' && isParticipant && !isSubmitter
+  const canSubmit    = match.status === 'scheduled' && isParticipant
+  const canConfirm   = match.status === 'pending_confirmation' && isParticipant && !isSubmitter
+
+  const aIsMe = match.couple_a_id === coupleId
+  const bIsMe = match.couple_b_id === coupleId
+  const aWon  = match.winner_id === match.couple_a_id
+  const bWon  = match.winner_id === match.couple_b_id
 
   return (
-    <div className="bg-surface border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-      {/* Summary row */}
+    <div style={{ borderTop: '1px solid #f8fafc' }}>
       <button
-        className="w-full text-left px-4 py-3.5 flex items-start gap-3 hover:bg-gray-50/50 transition-colors"
         onClick={onToggleExpand}
+        style={{
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '10px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          textAlign: 'left',
+        }}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sl.bg} ${sl.color}`}>
-              {sl.text}
-            </span>
-            {match.time_slot && (
-              <span className="text-xs text-text-secondary">{match.time_slot}</span>
-            )}
-            {match.court && (
-              <span className="text-xs text-text-secondary">· {match.court}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className={`font-semibold truncate ${match.couple_a_id === coupleId ? 'text-primary' : 'text-text-primary'}`}>
-              {formatName(match.couple_a?.team_name, 16)}
-            </span>
-            <span className="text-text-secondary shrink-0">vs</span>
-            <span className={`font-semibold truncate ${match.couple_b_id === coupleId ? 'text-primary' : 'text-text-primary'}`}>
-              {formatName(match.couple_b?.team_name, 16)}
-            </span>
-          </div>
-          {match.score_a && (
-            <div className="mt-1 text-sm font-mono text-primary font-bold">
-              {match.score_a} — {match.score_b}
-            </div>
-          )}
+        {/* Court / time */}
+        <div style={{ fontSize: 9, color: '#b0b8c8', flexShrink: 0, minWidth: 60 }}>
+          {match.court && <div style={{ color: '#11efb5', fontWeight: 600 }}>{match.court}</div>}
+          {match.time_slot && <div>{match.time_slot}</div>}
         </div>
-        <span className="text-text-secondary text-lg mt-0.5">{expanded ? '↑' : '↓'}</span>
+
+        {/* Couple A */}
+        <div style={{
+          flex: 1,
+          textAlign: 'right',
+          fontWeight: aWon ? 700 : 400,
+          color: aWon ? '#001d72' : '#94a3b8',
+          fontSize: 11,
+          lineHeight: 1.3,
+        }}>
+          {aIsMe && <div style={{ fontSize: 8, color: '#11efb5', fontWeight: 600 }}>Tú</div>}
+          {formatName(match.couple_a?.team_name, 18)}
+        </div>
+
+        {/* Score */}
+        <div style={{
+          background: match.status === 'confirmed' ? 'rgba(17,239,181,.12)' : '#f8fafc',
+          borderRadius: 6,
+          padding: '3px 7px',
+          fontFamily: 'DM Mono, monospace',
+          fontWeight: 700,
+          fontSize: 11,
+          color: match.status === 'confirmed' ? '#0cb882' : '#94a3b8',
+          flexShrink: 0,
+          minWidth: 50,
+          textAlign: 'center',
+        }}>
+          {match.score_a && match.score_b
+            ? `${match.score_a} ${match.score_b}`
+            : 'vs'
+          }
+        </div>
+
+        {/* Couple B */}
+        <div style={{
+          flex: 1,
+          fontWeight: bWon ? 700 : 400,
+          color: bWon ? '#001d72' : '#94a3b8',
+          fontSize: 11,
+          lineHeight: 1.3,
+        }}>
+          {bIsMe && <div style={{ fontSize: 8, color: '#11efb5', fontWeight: 600 }}>Tú</div>}
+          {formatName(match.couple_b?.team_name, 18)}
+        </div>
+
+        {/* Status badge */}
+        <div style={{ flexShrink: 0 }}>
+          <StatusBadge status={match.status} />
+        </div>
       </button>
 
       {/* Expanded actions */}
       {expanded && (
-        <div className="border-t border-gray-100 px-4 py-4 bg-gray-50/30">
+        <div style={{
+          borderTop: '1px solid #f1f5f9',
+          padding: '12px 14px',
+          background: '#fafbff',
+        }}>
           {canSubmit && (
             <ScoreInput match={match} onSuccess={onScoreSubmitted} />
           )}
 
           {canConfirm && (
-            <div className="space-y-2">
-              <p className="text-sm text-text-secondary mb-3">
-                <span className="font-medium">{match.couple_a_id === match.submitted_by
-                  ? match.couple_a?.team_name : match.couple_b?.team_name}</span> ha enviado el resultado:
-                <span className="font-mono font-bold text-primary ml-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 4px' }}>
+                <span style={{ fontWeight: 600, color: '#001d72' }}>
+                  {match.couple_a_id === match.submitted_by
+                    ? match.couple_a?.team_name
+                    : match.couple_b?.team_name}
+                </span>{' '}
+                ha enviado el resultado:
+                <span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#001d72', marginLeft: 6 }}>
                   {match.score_a} — {match.score_b}
                 </span>
               </p>
-              <button onClick={onConfirm}
-                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors">
-                Confirmar resultado
+              <button onClick={onConfirm} style={{
+                width: '100%',
+                background: 'linear-gradient(135deg,#11efb5,#0cb882)',
+                color: '#001d72',
+                fontWeight: 700,
+                fontSize: 13,
+                borderRadius: 12,
+                border: 'none',
+                padding: '11px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(17,239,181,.25)',
+              }}>
+                ✓ Confirmar resultado
               </button>
-              <button onClick={onDispute}
-                className="w-full bg-white border border-red-200 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-50 transition-colors">
-                Disputar resultado
+              <button onClick={onDispute} style={{
+                width: '100%',
+                background: 'white',
+                border: '1px solid #fecaca',
+                color: '#ef4444',
+                fontWeight: 600,
+                fontSize: 12,
+                borderRadius: 12,
+                padding: '10px',
+                cursor: 'pointer',
+              }}>
+                ⚠ Disputar resultado
               </button>
             </div>
           )}
 
           {match.status === 'pending_confirmation' && isSubmitter && (
-            <p className="text-sm text-text-secondary text-center py-2">
+            <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', margin: 0, padding: '4px 0' }}>
               Esperando confirmación del rival…
             </p>
           )}
 
           {match.status === 'disputed' && (
-            <p className="text-sm text-red-600 text-center py-2">
+            <p style={{ fontSize: 12, color: '#ef4444', textAlign: 'center', margin: 0, padding: '4px 0' }}>
               Resultado en disputa. El administrador resolverá este partido.
             </p>
           )}
 
           {match.status === 'confirmed' && (
-            <p className="text-sm text-green-700 text-center py-2 font-medium">
-              Resultado confirmado.
+            <p style={{ fontSize: 12, color: '#0cb882', textAlign: 'center', fontWeight: 600, margin: 0, padding: '4px 0' }}>
+              ✓ Resultado confirmado
             </p>
           )}
         </div>

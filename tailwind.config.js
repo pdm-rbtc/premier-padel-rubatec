@@ -15,7 +15,8 @@ export default {
         surface:   '#ffffff',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        mono: ['DM Mono', 'monospace'],
       },
       animation: {
         ticker: 'ticker 35s linear infinite',
