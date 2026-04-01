@@ -4,6 +4,7 @@ import BracketView from '../components/BracketView.jsx'
 import LiveBadge from '../components/LiveBadge.jsx'
 import { useRealtime } from '../hooks/useRealtime.js'
 import { getDummyStandings } from '../lib/dummy.js'
+import { DIVISION_CONFIG, DIVISIONS } from '../lib/divisions.js'
 import { t } from '../i18n/index.js'
 
 const GROUP_CODES = {
@@ -12,18 +13,12 @@ const GROUP_CODES = {
   plata:   ['G1', 'G2', 'G3'],
 }
 
-const DIVISION_STYLE = {
-  diamant: { icon: '💎', bg: 'from-[#001d72] to-[#0433FF]' },
-  or:      { icon: '🥇', bg: 'from-yellow-500 to-yellow-400' },
-  plata:   { icon: '🥈', bg: 'from-gray-400 to-gray-300' },
-}
-
-const VALID_DIVISIONS = ['diamant', 'or', 'plata']
+const VALID_DIVISIONS = DIVISIONS
 
 export default function BracketPage() {
   const { division } = useParams()
   const groups = GROUP_CODES[division] ?? []
-  const style = DIVISION_STYLE[division]
+  const cfg = DIVISION_CONFIG[division]
   const { connected } = useRealtime(
     'matches',
     () => {},   // GroupTable handles its own refetch via useStandings
@@ -42,9 +37,9 @@ export default function BracketPage() {
   return (
     <div className="space-y-8">
       {/* Division header */}
-      <div className={`bg-gradient-to-r ${style.bg} rounded-2xl px-6 py-5 text-white`}>
+      <div className={`bg-gradient-to-r ${cfg.gradient} rounded-2xl px-6 py-5 text-white`}>
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{style.icon}</span>
+          <span className="text-3xl">{cfg.icon}</span>
           <div>
             <h1 className="text-2xl font-bold">{t(`divisions.${division}`)}</h1>
             <div className="flex items-center gap-3 mt-0.5">

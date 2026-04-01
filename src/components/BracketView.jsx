@@ -1,5 +1,6 @@
 import { useBracket } from '../hooks/useBracket.js'
 import { KNOCKOUT_STRUCTURE } from '../lib/dummy.js'
+import Spinner from './Spinner.jsx'
 
 // ── Label helpers ─────────────────────────────────────────────────────────────
 
@@ -114,7 +115,8 @@ export default function BracketView({ division }) {
     if (!structure) return null
     return (
       <div className="space-y-8">
-        <div className="overflow-x-auto pb-2">
+        <div className="overflow-x-auto pb-2 -mx-1 px-1">
+          <p className="text-xs text-text-secondary mb-2 sm:hidden">← Desliza para ver el cuadro completo →</p>
           <div className="flex gap-8 min-w-max items-start">
             {structure.main.map(({ round, slots }) => (
               <div key={round} className="flex flex-col gap-3">
@@ -143,7 +145,12 @@ export default function BracketView({ division }) {
   }
 
   if (loading) {
-    return <div className="text-center py-8 text-text-secondary text-sm">Cargando cuadro…</div>
+    return (
+      <div className="flex items-center justify-center gap-2 py-8 text-text-secondary text-sm">
+        <Spinner size="sm" />
+        <span>Cargando cuadro…</span>
+      </div>
+    )
   }
 
   const { columns, consolation } = buildStructure(matches)
@@ -151,7 +158,8 @@ export default function BracketView({ division }) {
   return (
     <div className="space-y-8">
       {/* Main bracket */}
-      <div className="overflow-x-auto pb-2">
+      <div className="overflow-x-auto pb-2 -mx-1 px-1">
+        <p className="text-xs text-text-secondary mb-2 sm:hidden">← Desliza para ver el cuadro completo →</p>
         <div className="flex gap-8 min-w-max items-start">
           {columns.map(({ heading, matches: colMatches }) => (
             <div key={heading} className="flex flex-col gap-3">

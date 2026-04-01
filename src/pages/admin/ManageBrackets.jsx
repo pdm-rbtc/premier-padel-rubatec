@@ -3,8 +3,8 @@ import { supabase } from '../../lib/supabase.js'
 import AdminGuard from '../../components/AdminGuard.jsx'
 import { generateBracket, matchLabel, ROUND_LABELS } from '../../lib/bracketEngine.js'
 import { getDummyStandings } from '../../lib/dummy.js'
-
-const DIVISIONS = ['diamant', 'or', 'plata']
+import { DIVISION_CONFIG, DIVISIONS } from '../../lib/divisions.js'
+import Spinner from '../../components/Spinner.jsx'
 
 const GROUP_CODES = {
   diamant: ['G1', 'G2', 'G3'],
@@ -138,8 +138,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
   const [confirmClear, setConfirmClear] = useState(false)
   const [error, setError]           = useState(null)
 
-  const ICONS = { diamant: '💎', or: '🥇', plata: '🥈' }
-  const NAMES = { diamant: 'División Diamant', or: 'División Or', plata: 'División Plata' }
+  const { icon, fullLabel: name, gradient } = DIVISION_CONFIG[division]
 
   const handleGenerate = useCallback(async () => {
     setError(null)
@@ -201,12 +200,12 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
   }
 
   const statusBadge = state.loading
-    ? { text: '…',             cls: 'bg-gray-100 text-gray-400' }
+    ? { text: null,                  cls: 'bg-gray-100 text-gray-400' }
     : state.exists
-      ? { text: 'Generado',     cls: 'bg-green-100 text-green-700' }
+      ? { text: 'Generado',          cls: 'bg-green-100 text-green-700' }
       : state.complete
-        ? { text: 'Listo',       cls: 'bg-accent/20 text-primary' }
-        : { text: 'Grupos incompletos', cls: 'bg-yellow-100 text-yellow-700' }
+        ? { text: 'Listo',           cls: 'bg-accent/20 text-primary' }
+        : { text: 'Grupos incompl.', cls: 'bg-yellow-100 text-yellow-700' }
 
   return (
     <div className="bg-surface border border-gray-100 rounded-xl shadow-sm overflow-hidden">
@@ -215,15 +214,17 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
         onClick={onToggle}
         className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50/50 transition-colors text-left"
       >
-        <span className="text-2xl">{ICONS[division]}</span>
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-xl shrink-0`}>
+          {icon}
+        </div>
         <div className="flex-1">
-          <div className="font-semibold text-text-primary">{NAMES[division]}</div>
+          <div className="font-semibold text-text-primary">{name}</div>
           <div className="text-xs text-text-secondary mt-0.5">
             {GROUP_CODES[division].length} grupos · {GROUP_CODES[division].length * 4} parejas
           </div>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusBadge.cls}`}>
-          {statusBadge.text}
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5 ${statusBadge.cls}`}>
+          {state.loading ? <Spinner size="sm" className="text-gray-400" /> : statusBadge.text}
         </span>
         <span className="text-text-secondary ml-1">{expanded ? '↑' : '↓'}</span>
       </button>
@@ -276,7 +277,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
             {confirmClear && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-red-600 font-medium">
-                  ¿Eliminar todos los partidos eliminatorios de {NAMES[division]}?
+                  ¿Eliminar todos los partidos eliminatorios de {name}?
                 </span>
                 <button onClick={handleClear} disabled={clearing}
                   className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
