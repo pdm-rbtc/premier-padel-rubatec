@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { signInWithGoogle, signOut } from '../lib/auth.js'
-import { DIVISION_CONFIG, DIVISIONS } from '../lib/divisions.js'
 import { t } from '../i18n/index.js'
 
 const AUTH_BTN_DESKTOP = 'bg-accent text-primary px-3 py-1.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity'
@@ -14,10 +13,10 @@ export default function Navbar() {
   const { pathname } = useLocation()
 
   const close = () => setMenuOpen(false)
-  const isActive = (to) => pathname === to || pathname.startsWith(to + '/')
+  const isActive = (to) => to === '/' ? pathname === '/' : pathname.startsWith(to)
 
   const navLinks = [
-    ...DIVISIONS.map(d => ({ to: `/bracket/${d}`, label: DIVISION_CONFIG[d].label })),
+    { to: '/',       label: t('nav.torneo') },
     ...(user    ? [{ to: '/portal', label: t('nav.portal') }] : []),
     ...(isAdmin ? [{ to: '/admin',  label: t('nav.admin')  }] : []),
   ]

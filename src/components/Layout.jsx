@@ -1,10 +1,12 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar.jsx'
+import LiveTicker from './LiveTicker.jsx'
 
 export default function Layout() {
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
+      <LiveTicker />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Outlet />
       </main>

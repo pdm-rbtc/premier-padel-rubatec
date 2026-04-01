@@ -1,7 +1,6 @@
 {
   "nav": {
-    "home": "Inicio",
-    "bracket": "Cuadros",
+    "torneo": "Torneo",
     "portal": "Mi Portal",
     "admin": "Admin",
     "login": "Iniciar sesión",
