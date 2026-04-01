@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { useAuth } from '../../hooks/useAuth.js'
 import AdminGuard from '../../components/AdminGuard.jsx'
 
 const FILTERS = [
@@ -18,6 +19,7 @@ export default function ManageMatches() {
 }
 
 function ManageMatchesContent() {
+  const { user } = useAuth()
   const [filter, setFilter]     = useState('disputed')
   const [matches, setMatches]   = useState([])
   const [loading, setLoading]   = useState(true)
@@ -35,17 +37,20 @@ function ManageMatchesContent() {
 
   async function resolveDispute(matchId, winnerId, scoreA, scoreB) {
     setResolving(matchId)
-    const gamesA = scoreA.split(' ').reduce((s, p) => s + parseInt(p.split('-')[0] || 0), 0)
-    const gamesB = scoreB.split(' ').reduce((s, p) => s + parseInt(p.split('-')[1] || 0), 0)
+    const parseGames = (score, side) =>
+      score.split(' ').reduce((s, p) => s + (parseInt(p.split('-')[side] || 0) || 0), 0)
+    const gamesA = parseGames(scoreA, 0)
+    const gamesB = parseGames(scoreB, 1)
 
-    const { error } = await supabase.from('matches').update({
-      status:    'confirmed',
-      winner_id: winnerId,
-      score_a:   scoreA,
-      score_b:   scoreB,
-      games_a:   gamesA,
-      games_b:   gamesB,
-    }).eq('id', matchId)
+    const { error } = await supabase.rpc('admin_resolve_match', {
+      p_match_id:  matchId,
+      p_actor_id:  user.id,
+      p_winner_id: winnerId,
+      p_score_a:   scoreA,
+      p_score_b:   scoreB,
+      p_games_a:   gamesA,
+      p_games_b:   gamesB,
+    })
 
     setResolving(null)
     if (!error) setMatches(prev => prev.filter(m => m.id !== matchId))
@@ -53,16 +58,10 @@ function ManageMatchesContent() {
 
   async function adminConfirm(matchId) {
     setResolving(matchId)
-    const match = matches.find(m => m.id === matchId)
-    const gamesA = match.games_a ?? 0
-    const gamesB = match.games_b ?? 0
-    const winnerId = gamesA >= gamesB ? match.couple_a_id : match.couple_b_id
-
-    const { error } = await supabase.from('matches').update({
-      status:    'confirmed',
-      winner_id: winnerId,
-    }).eq('id', matchId)
-
+    const { error } = await supabase.rpc('confirm_match', {
+      p_match_id: matchId,
+      p_actor_id: user.id,
+    })
     setResolving(null)
     if (!error) setMatches(prev => prev.filter(m => m.id !== matchId))
   }

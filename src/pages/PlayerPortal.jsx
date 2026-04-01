@@ -75,7 +75,10 @@ function AuthenticatedPortal() {
 
   // Called after confirmation/dispute — update match in local state
   async function handleConfirm(matchId) {
-    const { error } = await supabase.from('matches').update({ status: 'confirmed' }).eq('id', matchId)
+    const { error } = await supabase.rpc('confirm_match', {
+      p_match_id: matchId,
+      p_actor_id: user.id,
+    })
     if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'confirmed' } : m))
   }
 
