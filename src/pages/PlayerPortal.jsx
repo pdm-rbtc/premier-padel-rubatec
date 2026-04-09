@@ -9,15 +9,16 @@ import { formatName } from '../lib/utils.js'
 import { useI18n } from '../i18n/index.jsx'
 
 // ── Status badge config ───────────────────────────────────────────────────────
-const ST_CFG = {
-  confirmed:            { bg: 'rgba(17,239,181,.12)',   color: '#0cb882',  text: '✓ Confirmado'   },
-  pending_confirmation: { bg: 'rgba(255,128,0,.10)',    color: '#ff8000',  text: '⏳ Pendiente'   },
-  scheduled:            { bg: 'rgba(100,116,139,.08)',  color: '#94a3b8',  text: '· Programado'   },
-  disputed:             { bg: 'rgba(239,68,68,.10)',    color: '#ef4444',  text: '⚠ Disputado'    },
+const STATUS_STYLE = {
+  confirmed:            { bg: 'rgba(17,239,181,.12)',  color: '#0cb882', icon: '✓' },
+  pending_confirmation: { bg: 'rgba(255,128,0,.10)',   color: '#ff8000', icon: '⏳' },
+  scheduled:            { bg: 'rgba(100,116,139,.08)', color: '#94a3b8', icon: '·' },
+  disputed:             { bg: 'rgba(239,68,68,.10)',   color: '#ef4444', icon: '⚠' },
 }
 
 function StatusBadge({ status }) {
-  const cfg = ST_CFG[status] ?? ST_CFG.scheduled
+  const { t } = useI18n()
+  const cfg = STATUS_STYLE[status] ?? STATUS_STYLE.scheduled
   return (
     <span style={{
       background: cfg.bg,
@@ -28,7 +29,7 @@ function StatusBadge({ status }) {
       borderRadius: 20,
       whiteSpace: 'nowrap',
     }}>
-      {cfg.text}
+      {cfg.icon} {t(`match.status.${status}`)}
     </span>
   )
 }
@@ -50,11 +51,9 @@ export default function PlayerPortal() {
           boxShadow: '0 4px 24px rgba(0,29,114,.08)',
         }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎾</div>
-          <h1 style={{ color: '#001d72', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Mi Portal</h1>
+          <h1 style={{ color: '#001d72', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>{t('portal.login_title')}</h1>
           <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.5, margin: '0 0 28px' }}>
-            Inicia sesión con tu cuenta{' '}
-            <span style={{ fontWeight: 600, color: '#001d72' }}>@rubatec.cat</span>{' '}
-            para ver tus partidos y enviar resultados.
+            {t('portal.login_subtitle')}
           </p>
           <button
             onClick={signInWithGoogle}
@@ -76,7 +75,7 @@ export default function PlayerPortal() {
             }}
           >
             <GoogleIcon />
-            Iniciar sesión con Google
+            {t('portal.login_google')}
           </button>
         </div>
       </div>
@@ -166,14 +165,14 @@ function AuthenticatedPortal() {
             fontSize: 11, color: '#94a3b8', background: 'none', border: 'none',
             cursor: 'pointer', padding: '2px 6px', borderRadius: 6,
           }}>
-            Salir
+            {t('portal.logout')}
           </button>
         </div>
       </div>
 
       {isLoading && (
         <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8', fontSize: 13 }}>
-          Cargando…
+          {t('portal.loading')}
         </div>
       )}
 
@@ -187,7 +186,7 @@ function AuthenticatedPortal() {
           color: '#92400e',
           lineHeight: 1.5,
         }}>
-          Tu cuenta aún no está vinculada a ninguna pareja. Contacta con el administrador del torneo.
+          {t('portal.no_couple')}
         </div>
       )}
 
@@ -210,7 +209,7 @@ function AuthenticatedPortal() {
             }} />
             <div style={{ position: 'relative' }}>
               <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 10, letterSpacing: 1, fontWeight: 500, marginBottom: 6 }}>
-                MI PAREJA
+                {t('portal.my_couple').toUpperCase()}
               </div>
               <div style={{ color: 'white', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
                 {myCouple?.team_name ?? displayName}
@@ -234,7 +233,7 @@ function AuthenticatedPortal() {
             }}>
               <div style={{ padding: '10px 14px 0' }}>
                 <div style={{ color: '#94a3b8', fontSize: 10, fontWeight: 600, letterSpacing: .5, marginBottom: 8 }}>
-                  PRÓXIMO PARTIDO
+                  {t('portal.next_match').toUpperCase()}
                 </div>
               </div>
               {/* Court + time + badge */}
@@ -256,7 +255,7 @@ function AuthenticatedPortal() {
               }}>
                 <div style={{ flex: 1, textAlign: 'right' }}>
                   {nextMatch.couple_a_id === coupleId && (
-                    <div style={{ fontSize: 9, fontWeight: 600, color: '#11efb5', marginBottom: 2 }}>Tu pareja</div>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: '#11efb5', marginBottom: 2 }}>{t('portal.you')}</div>
                   )}
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>
                     {nextMatch.couple_a?.team_name}
@@ -275,7 +274,7 @@ function AuthenticatedPortal() {
                 </div>
                 <div style={{ flex: 1 }}>
                   {nextMatch.couple_b_id === coupleId && (
-                    <div style={{ fontSize: 9, fontWeight: 600, color: '#11efb5', marginBottom: 2 }}>Tu pareja</div>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: '#11efb5', marginBottom: 2 }}>{t('portal.you')}</div>
                   )}
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a' }}>
                     {nextMatch.couple_b?.team_name}
@@ -301,7 +300,7 @@ function AuthenticatedPortal() {
                     boxShadow: '0 4px 14px rgba(17,239,181,.25)',
                   }}
                 >
-                  {expandedMatchId === nextMatch.id ? 'Cancelar' : '🎾 Enviar resultado'}
+                  {expandedMatchId === nextMatch.id ? t('portal.cancel') : `🎾 ${t('portal.send_result')}`}
                 </button>
                 {expandedMatchId === nextMatch.id && (
                   <div style={{ marginTop: 10 }}>
@@ -328,7 +327,7 @@ function AuthenticatedPortal() {
               boxShadow: '0 1px 4px rgba(0,29,114,.05)',
             }}>
               <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#001d72' }}>
-                Historial
+                {t('portal.history')}
               </div>
               {sorted.map((match, idx) => (
                 <MatchRow
@@ -368,6 +367,7 @@ function AuthenticatedPortal() {
 
 // ── Individual match row ──────────────────────────────────────────────────────
 function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted, onConfirm, onDispute, isLast }) {
+  const { t } = useI18n()
   const isSubmitter  = match.submitted_by === coupleId
   const isParticipant = match.couple_a_id === coupleId || match.couple_b_id === coupleId
   const canSubmit    = match.status === 'scheduled' && isParticipant
@@ -409,7 +409,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           fontSize: 11,
           lineHeight: 1.3,
         }}>
-          {aIsMe && <div style={{ fontSize: 8, color: '#11efb5', fontWeight: 600 }}>Tú</div>}
+          {aIsMe && <div style={{ fontSize: 8, color: '#11efb5', fontWeight: 600 }}>{t('portal.you')}</div>}
           {formatName(match.couple_a?.team_name, 18)}
         </div>
 
@@ -426,10 +426,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           minWidth: 50,
           textAlign: 'center',
         }}>
-          {match.score_a && match.score_b
-            ? `${match.score_a} ${match.score_b}`
-            : 'vs'
-          }
+          {match.score_a ? match.score_a : t('match.vs')}
         </div>
 
         {/* Couple B */}
@@ -440,7 +437,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           fontSize: 11,
           lineHeight: 1.3,
         }}>
-          {bIsMe && <div style={{ fontSize: 8, color: '#11efb5', fontWeight: 600 }}>Tú</div>}
+          {bIsMe && <div style={{ fontSize: 8, color: '#11efb5', fontWeight: 600 }}>{t('portal.you')}</div>}
           {formatName(match.couple_b?.team_name, 18)}
         </div>
 
@@ -469,9 +466,9 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
                     ? match.couple_a?.team_name
                     : match.couple_b?.team_name}
                 </span>{' '}
-                ha enviado el resultado:
+                {t('portal.opponent_submitted')}:
                 <span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#001d72', marginLeft: 6 }}>
-                  {match.score_a} — {match.score_b}
+                  {match.score_a}
                 </span>
               </p>
               <button onClick={onConfirm} style={{
@@ -486,7 +483,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
                 cursor: 'pointer',
                 boxShadow: '0 4px 14px rgba(17,239,181,.25)',
               }}>
-                ✓ Confirmar resultado
+                {t('portal.confirm_result')}
               </button>
               <button onClick={onDispute} style={{
                 width: '100%',
@@ -499,7 +496,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
                 padding: '10px',
                 cursor: 'pointer',
               }}>
-                ⚠ Disputar resultado
+                {t('portal.dispute_result')}
               </button>
             </div>
           )}

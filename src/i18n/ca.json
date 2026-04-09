@@ -8,13 +8,44 @@
   },
   "home": {
     "title": "3r Torneig Premium Pàdel Rubatec",
-    "subtitle": "Benvingut al torneig",
-    "divisions": "Divisions"
+    "subtitle": "Jornada en curs",
+    "parejas": "parelles",
+    "pistas": "pistes",
+    "stats": {
+      "parejas": "Parelles",
+      "jugados": "Jugats",
+      "pendientes": "Pendents",
+      "disputas": "Disputes",
+      "restantes": "Restants"
+    },
+    "tab_groups": "Grups",
+    "tab_bracket": "Quadres",
+    "fase_grupos": "Fase de Grups",
+    "fase_eliminatoria": "Fase Eliminatòria",
+    "bracket_pending": "La fase eliminatòria es generarà en finalitzar la fase de grups.",
+    "garantia": "Totes les parelles juguen mínim 4 partits · 3 en grups + 1 o més en eliminatòries",
+    "grupo": "Grup"
   },
   "divisions": {
     "diamant": "Divisió Diamant",
     "or": "Divisió Or",
     "plata": "Divisió Plata"
+  },
+  "table": {
+    "pos": "#",
+    "pareja": "Parella",
+    "pj": "PJ",
+    "g": "G",
+    "p": "P",
+    "jf": "JF",
+    "jc": "JC",
+    "diff": "±",
+    "pts": "PTS"
+  },
+  "timeline": {
+    "qf": "QF",
+    "sf": "SF",
+    "final": "FINAL"
   },
   "match": {
     "court": "Pista",
@@ -32,15 +63,54 @@
     "dispute_score": "Disputar resultat"
   },
   "portal": {
-    "my_matches": "Els meus partits",
-    "next_match": "Proper partit",
-    "no_matches": "No tens partits assignats"
+    "login_title": "El Meu Portal",
+    "login_subtitle": "Inicia sessió amb el teu compte @rubatec.cat per veure els teus partits i enviar resultats.",
+    "login_google": "Iniciar sessió amb Google",
+    "loading": "Carregant...",
+    "no_couple": "No tens parella assignada encara. Contacta amb l'administrador.",
+    "my_couple": "La Meva Parella",
+    "wins": "Vict.",
+    "losses": "Der.",
+    "next_match": "Proper Partit",
+    "send_result": "Enviar resultat",
+    "cancel": "Cancel·lar",
+    "history": "Historial",
+    "no_matches": "No tens partits assignats",
+    "you": "Tu",
+    "opponent_submitted": "ha enviat el resultat",
+    "confirm_result": "✓ Confirmar resultat",
+    "dispute_result": "✗ Disputar",
+    "logout": "Sortir",
+    "info": "Els resultats es confirmen per la parella contrària. En cas de disputa, l'administració resoldrà.",
+    "live": "En directe"
   },
   "admin": {
     "dashboard": "Tauler d'administració",
+    "subtitle": "3r Torneig Premium Pàdel Rubatec",
     "couples": "Parelles",
     "matches": "Partits",
-    "brackets": "Quadres"
+    "brackets": "Quadres",
+    "confirmed": "Confirmats",
+    "disputed": "En disputa",
+    "attention": "Requereix atenció",
+    "manage_couples_desc": "Gestionar parelles i importar CSV",
+    "manage_matches_desc": "Veure partits i resoldre disputes",
+    "manage_brackets_desc": "Generar fase eliminatòria",
+    "test_data": "Dades de prova",
+    "test_data_desc": "Restaura els partits de prova a l'estat inicial.",
+    "reset": "↺ Restaurar",
+    "resetting": "Restaurant…",
+    "dev_mode": "Mode Desenvolupador",
+    "dev_mode_desc": "Simula ser qualsevol jugador per provar el portal. Només visible per a administradors.",
+    "dev_email_placeholder": "email@rubatec.cat",
+    "dev_apply": "Aplicar",
+    "dev_clear": "Reiniciar",
+    "dev_active": "Actiu com",
+    "dev_not_found": "No s'ha trobat el jugador o la seva parella.",
+    "tournament": "Control del Torneig",
+    "tournament_desc": "Inicia o atura el torneig per a proves.",
+    "start_tournament": "▶ Iniciar Torneig",
+    "stop_tournament": "■ Aturar Torneig"
   },
   "errors": {
     "not_authorized": "No tens permís per a aquesta acció",

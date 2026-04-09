@@ -78,10 +78,10 @@ export default function Layout() {
                 </span>
               </div>
               <h1 style={{ color: 'white', fontSize: 21, fontWeight: 700, margin: '4px 0 2px', letterSpacing: '-.3px' }}>
-                3r Torneo Premium Pádel
+                3r {lang === 'ca' ? 'Torneig' : 'Torneo'} Premium Pádel
               </h1>
               <p style={{ color: 'rgba(255,255,255,.4)', fontSize: 11, margin: 0 }}>
-                Jornada en curso · 48 parejas · 12 pistas
+                {t('home.subtitle')} · 48 {t('home.parejas')} · 12 {t('home.pistas')}
               </p>
             </div>
 

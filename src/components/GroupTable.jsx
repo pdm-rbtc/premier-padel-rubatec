@@ -1,7 +1,9 @@
 import { useStandings } from '../hooks/useStandings.js'
 import { DIVISION_CONFIG } from '../lib/divisions.js'
+import { useI18n } from '../i18n/index.jsx'
 
 export default function GroupTable({ division, groupCode, standings: standingsProp }) {
+  const { t } = useI18n()
   const shouldFetch = !standingsProp
   const { standings: fetched, loading } = useStandings(
     shouldFetch ? division : null,
@@ -21,7 +23,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
       color: '#94a3b8',
       fontSize: 12,
     }}>
-      Cargando...
+      {t('portal.loading')}
     </div>
   )
 
@@ -43,7 +45,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
         alignItems: 'center',
       }}>
         <span style={{ color: '#11efb5', fontWeight: 700, fontSize: 12, letterSpacing: .5 }}>
-          GRUPO {groupCode}
+          {t('home.grupo').toUpperCase()} {groupCode}
         </span>
         <span style={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>
           {matchesPlayed > 0 ? `${matchesPlayed}/3` : '—'}
@@ -55,7 +57,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              {['#', 'Pareja', 'PJ', 'G', 'P', 'JF', 'JC', '±', 'PTS'].map(h => (
+              {[t('table.pos'), t('table.pareja'), t('table.pj'), t('table.g'), t('table.p'), t('table.jf'), t('table.jc'), t('table.diff'), t('table.pts')].map(h => (
                 <th key={h} style={{
                   padding: '7px 5px',
                   textAlign: h === 'Pareja' ? 'left' : 'center',

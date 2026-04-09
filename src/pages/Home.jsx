@@ -6,6 +6,7 @@ import Timeline from '../components/Timeline.jsx'
 import { DIVISION_CONFIG, DIVISIONS } from '../lib/divisions.js'
 import { getDummyStandings } from '../lib/dummy.js'
 import { supabase } from '../lib/supabase.js'
+import { useI18n } from '../i18n/index.jsx'
 
 const GROUP_CODES = {
   diamant: ['G1', 'G2', 'G3'],
@@ -50,6 +51,7 @@ function StatCard({ label, value, icon, color }) {
 }
 
 export default function Home() {
+  const { t } = useI18n()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeDiv = DIVISIONS.includes(searchParams.get('div'))
     ? searchParams.get('div')
@@ -85,11 +87,11 @@ export default function Home() {
 
       {/* Stats bar */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <StatCard label="Parejas"    value={stats?.couples}   icon="👥" color="#0433FF" />
-        <StatCard label="Jugados"    value={stats?.played}    icon="✅" color="#11efb5" />
-        <StatCard label="Pendientes" value={stats?.pending}   icon="⏳" color="#ff8000" />
-        <StatCard label="Disputas"   value={stats?.disputes}  icon="⚠️" color="#ef4444" />
-        <StatCard label="Restantes"  value={stats?.remaining} icon="📅" color="#94a3b8" />
+        <StatCard label={t('home.stats.parejas')}    value={stats?.couples}   icon="👥" color="#0433FF" />
+        <StatCard label={t('home.stats.jugados')}    value={stats?.played}    icon="✅" color="#11efb5" />
+        <StatCard label={t('home.stats.pendientes')} value={stats?.pending}   icon="⏳" color="#ff8000" />
+        <StatCard label={t('home.stats.disputas')}   value={stats?.disputes}  icon="⚠️" color="#ef4444" />
+        <StatCard label={t('home.stats.restantes')}  value={stats?.remaining} icon="📅" color="#94a3b8" />
       </div>
 
       {/* Division tabs */}
@@ -149,7 +151,7 @@ export default function Home() {
         boxShadow: '0 1px 4px rgba(0,29,114,.05)',
       }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#001d72', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14 }}>🏆</span> Fase Eliminatoria
+          <span style={{ fontSize: 14 }}>🏆</span> {t('home.fase_eliminatoria')}
         </div>
         <BracketView division={activeDiv} />
       </div>
@@ -166,8 +168,7 @@ export default function Home() {
       }}>
         <span style={{ fontSize: 16 }}>💡</span>
         <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
-          <strong style={{ color: '#001d72' }}>Garantía de juego: </strong>
-          Todos juegan 3 partidos de grupo + mínimo 1 de eliminatoria/consolación.
+          {t('home.garantia')}
         </div>
       </div>
     </div>

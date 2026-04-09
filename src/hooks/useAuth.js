@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { isAdmin } from '../lib/auth.js'
+import { useDevMode } from '../contexts/DevMode.jsx'
 
 export function useAuth() {
   const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)   // { couple_id, role } from public.users
+  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const devMode = useDevMode()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -20,7 +22,6 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Fetch profile (couple_id, role) whenever the authenticated user changes
   useEffect(() => {
     if (!user) { setProfile(null); return }
 
@@ -32,11 +33,15 @@ export function useAuth() {
       .then(({ data }) => setProfile(data ?? null))
   }, [user?.id])
 
+  // Dev mode overrides coupleId for portal testing; real auth (isAdmin) always uses real user
+  const coupleId = devMode.active ? devMode.coupleId : (profile?.couple_id ?? null)
+
   return {
     user,
     profile,
     loading,
-    coupleId: profile?.couple_id ?? null,
+    coupleId,
     isAdmin: isAdmin(user),
+    devMode,
   }
 }
