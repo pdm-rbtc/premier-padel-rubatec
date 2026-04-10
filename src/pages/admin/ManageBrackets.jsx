@@ -174,7 +174,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
       next_match_slot: m.next_match_slot,
     }))
 
-    const { error: dbError } = await supabase.from('matches').insert(rows)
+    const { error: dbError } = await supabase.from('matches').upsert(rows, { onConflict: 'id' })
     setSaving(false)
 
     if (dbError) {

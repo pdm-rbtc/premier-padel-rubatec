@@ -20,7 +20,9 @@ function DashboardContent() {
   const devMode = useDevMode()
   const [stats, setStats] = useState(null)
   const [resetting, setResetting] = useState(false)
+  const [resetError, setResetError] = useState('')
   const [confirmReset, setConfirmReset] = useState(false)
+  const [statsKey, setStatsKey] = useState(0)
   const [devEmail, setDevEmail] = useState('')
   const [devError, setDevError] = useState('')
   const [devLoading, setDevLoading] = useState(false)
@@ -41,8 +43,14 @@ function DashboardContent() {
   async function handleReset() {
     setResetting(true)
     setConfirmReset(false)
-    await supabase.rpc('reset_scores')
+    setResetError('')
+    const { error } = await supabase.rpc('reset_scores')
     setResetting(false)
+    if (error) {
+      setResetError(error.message)
+    } else {
+      setStatsKey(k => k + 1)
+    }
   }
 
   async function handleDevApply() {
@@ -55,6 +63,7 @@ function DashboardContent() {
   }
 
   useEffect(() => {
+    setStats(null)
     Promise.all([
       supabase.from('couples').select('id', { count: 'exact', head: true }),
       supabase.from('matches').select('id', { count: 'exact', head: true }),
@@ -68,7 +77,7 @@ function DashboardContent() {
         confirmed: confirmed.count ?? 0,
       })
     })
-  }, [])
+  }, [statsKey])
 
   const statCards = stats ? [
     { label: t('admin.couples'),   value: stats.couples,   color: 'text-primary',   urgent: false },
@@ -247,6 +256,9 @@ function DashboardContent() {
           {t('admin.reset_scores_desc')}
         </p>
 
+        {resetError && (
+          <p style={{ color: '#ef4444', fontSize: 11, marginBottom: 8 }}>{resetError}</p>
+        )}
         {confirmReset ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p style={{ fontSize: 12, color: '#ef4444', fontWeight: 600, margin: 0 }}>

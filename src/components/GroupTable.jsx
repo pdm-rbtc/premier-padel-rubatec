@@ -97,9 +97,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
                     <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 12, lineHeight: 1.2 }}>
                       {row.couple?.team_name}
                     </div>
-                    {dept && (
-                      <div style={{ color: '#b0b8c8', fontSize: 9, marginTop: 1 }}>{dept}</div>
-                    )}
+                    <div style={{ color: '#b0b8c8', fontSize: 9, marginTop: 1 }}>{dept || '\u00A0'}</div>
                   </td>
 
                   {/* PJ */}
