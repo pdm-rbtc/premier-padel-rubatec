@@ -2,12 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { DIVISION_CONFIG } from '../lib/divisions.js'
 
-const DUMMY_ITEMS = [
-  { court: 'Pista 3',  div: 'Diamante G3', score: '4-3' },
-  { court: 'Pista 7',  div: 'Oro G2',      score: '5-4' },
-  { court: 'Pista 11', div: 'Plata G3',    score: '2-1' },
-]
-
 async function fetchLiveMatches() {
   const { data } = await supabase
     .from('matches')
@@ -19,28 +13,51 @@ async function fetchLiveMatches() {
 }
 
 export default function LiveTicker() {
-  const [items, setItems] = useState(DUMMY_ITEMS)
+  const [items, setItems] = useState([])
   const [offset, setOffset] = useState(0)
 
   useEffect(() => {
     fetchLiveMatches().then(data => {
-      if (data.length > 0) {
-        setItems(data.map(m => ({
-          court: m.court ?? '',
-          div: `${DIVISION_CONFIG[m.division]?.label ?? m.division}${m.group_code ? ' ' + m.group_code : ''}`,
-          score: m.score_a ? `${m.score_a}` : '',
-        })))
-      }
+      setItems(data.map(m => ({
+        court: m.court ?? '',
+        div: `${DIVISION_CONFIG[m.division]?.label ?? m.division}${m.group_code ? ' ' + m.group_code : ''}`,
+        score: m.score_a ?? '',
+      })))
     })
   }, [])
 
   useEffect(() => {
-    const t = setInterval(() => setOffset(v => v - 0.8), 30)
-    return () => clearInterval(t)
-  }, [])
+    if (items.length === 0) return
+    const timer = setInterval(() => setOffset(v => v - 0.8), 30)
+    return () => clearInterval(timer)
+  }, [items.length])
+
+  const liveCount = items.length
+
+  if (items.length === 0) {
+    return (
+      <div style={{
+        background: 'linear-gradient(90deg,#001d72,#0433FF)',
+        padding: '8px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        <span style={{
+          background: '#475569',
+          width: 6, height: 6,
+          borderRadius: '50%',
+          display: 'inline-block',
+          flexShrink: 0,
+        }} />
+        <span style={{ color: 'rgba(255,255,255,.4)', fontSize: 10, fontWeight: 600, letterSpacing: '1px' }}>
+          EN DIRECTO · Sin partidos en curso
+        </span>
+      </div>
+    )
+  }
 
   const displayItems = [...items, ...items, ...items, ...items]
-  const liveCount = items === DUMMY_ITEMS ? 3 : items.length
 
   return (
     <div style={{

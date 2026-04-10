@@ -93,6 +93,13 @@ function AuthenticatedPortal() {
     coupleId ? { coupleId } : {}
   )
   const [expandedMatchId, setExpandedMatchId] = useState(null)
+  const [coupleInfo, setCoupleInfo] = useState(null)
+
+  useEffect(() => {
+    if (!coupleId) return
+    supabase.from('couples').select('*').eq('id', coupleId).single()
+      .then(({ data }) => { if (data) setCoupleInfo(data) })
+  }, [coupleId])
 
   const isLoading = authLoading || matchLoading
 
@@ -106,16 +113,10 @@ function AuthenticatedPortal() {
 
   const nextMatch = sorted.find(m => m.status === 'scheduled')
 
-  // Couple info for display
-  const myCouple = matches.length > 0
-    ? (matches[0].couple_a_id === coupleId ? matches[0].couple_a : matches[0].couple_b)
-    : null
-
   const wins   = matches.filter(m => m.winner_id === coupleId).length
   const losses = matches.filter(m => m.status === 'confirmed' && m.winner_id && m.winner_id !== coupleId).length
-  const divisionMatch = matches[0]
-  const divLabel = divisionMatch
-    ? `División ${divisionMatch.division?.charAt(0).toUpperCase()}${divisionMatch.division?.slice(1) ?? ''} · Grupo ${divisionMatch.group_code ?? '—'}`
+  const divLabel = coupleInfo
+    ? `División ${coupleInfo.division?.charAt(0).toUpperCase()}${coupleInfo.division?.slice(1) ?? ''} · Grupo ${coupleInfo.group_code ?? '—'}`
     : null
 
   function handleScoreSubmitted(matchId) {
@@ -213,7 +214,7 @@ function AuthenticatedPortal() {
                 {t('portal.my_couple').toUpperCase()}
               </div>
               <div style={{ color: 'white', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
-                {myCouple?.team_name ?? displayName}
+                {coupleInfo?.team_name ?? displayName}
               </div>
               {(divLabel || wins + losses > 0) && (
                 <div style={{ color: '#11efb5', fontSize: 11 }}>

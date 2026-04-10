@@ -20,6 +20,7 @@ function DashboardContent() {
   const devMode = useDevMode()
   const [stats, setStats] = useState(null)
   const [resetting, setResetting] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const [devEmail, setDevEmail] = useState('')
   const [devError, setDevError] = useState('')
   const [devLoading, setDevLoading] = useState(false)
@@ -32,7 +33,8 @@ function DashboardContent() {
 
   async function handleReset() {
     setResetting(true)
-    await supabase.rpc('reset_test_data')
+    setConfirmReset(false)
+    await supabase.rpc('reset_scores')
     setResetting(false)
   }
 
@@ -203,29 +205,67 @@ function DashboardContent() {
         )}
       </div>
 
-      {/* Reset test data */}
+      {/* Reset scores */}
       <div style={{
         background: 'white',
         borderRadius: 14,
         padding: '16px 20px',
         boxShadow: '0 1px 4px rgba(0,29,114,.05)',
-        borderTop: '3px solid #f1f5f9',
+        borderTop: '3px solid #fecaca',
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#001d72', marginBottom: 4 }}>{t('admin.test_data')}</div>
-        <p style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>{t('admin.test_data_desc')}</p>
-        <button onClick={handleReset} disabled={resetting} style={{
-          background: resetting ? '#f1f5f9' : '#fef2f2',
-          color: resetting ? '#94a3b8' : '#ef4444',
-          border: '1px solid',
-          borderColor: resetting ? '#e2e8f0' : '#fecaca',
-          borderRadius: 8,
-          padding: '8px 16px',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: resetting ? 'default' : 'pointer',
-        }}>
-          {resetting ? t('admin.resetting') : t('admin.reset')}
-        </button>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#001d72', marginBottom: 4 }}>
+          {t('admin.reset_scores')}
+        </div>
+        <p style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>
+          {t('admin.reset_scores_desc')}
+        </p>
+
+        {confirmReset ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p style={{ fontSize: 12, color: '#ef4444', fontWeight: 600, margin: 0 }}>
+              ⚠️ {t('admin.reset_scores_confirm')}
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handleReset} disabled={resetting} style={{
+                background: resetting ? '#f1f5f9' : '#ef4444',
+                color: resetting ? '#94a3b8' : 'white',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: resetting ? 'default' : 'pointer',
+              }}>
+                {resetting ? t('admin.resetting') : t('admin.reset_scores_yes')}
+              </button>
+              <button onClick={() => setConfirmReset(false)} style={{
+                background: 'white',
+                color: '#64748b',
+                border: '1px solid #e2e8f0',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}>
+                {t('brackets.btn_cancel')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmReset(true)} disabled={resetting} style={{
+            background: '#fef2f2',
+            color: '#ef4444',
+            border: '1px solid #fecaca',
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}>
+            {t('admin.reset_scores')}
+          </button>
+        )}
       </div>
     </div>
   )
