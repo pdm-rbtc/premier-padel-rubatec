@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { DIVISION_CONFIG } from '../lib/divisions.js'
+import { useRealtime } from '../hooks/useRealtime.js'
 
 async function fetchLiveMatches() {
   const { data } = await supabase
@@ -15,6 +16,9 @@ async function fetchLiveMatches() {
 export default function LiveTicker() {
   const [items, setItems] = useState([])
   const [offset, setOffset] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useRealtime('matches', () => setRefreshKey(k => k + 1), null)
 
   useEffect(() => {
     fetchLiveMatches().then(data => {
@@ -24,7 +28,7 @@ export default function LiveTicker() {
         label: `${m.couple_a?.team_name ?? '?'} ${m.score_a ?? ''} ${m.couple_b?.team_name ?? '?'}`,
       })))
     })
-  }, [])
+  }, [refreshKey])
 
   useEffect(() => {
     if (items.length === 0) return

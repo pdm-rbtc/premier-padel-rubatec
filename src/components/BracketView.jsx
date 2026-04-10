@@ -2,14 +2,18 @@ import { useBracket } from '../hooks/useBracket.js'
 import { KNOCKOUT_STRUCTURE } from '../lib/dummy.js'
 import Spinner from './Spinner.jsx'
 
-// ── Label helpers ─────────────────────────────────────────────────────────────
+// ── Layout constants ──────────────────────────────────────────────────────────
+const CARD_W   = 176   // px  (Tailwind w-44)
+const CARD_H   = 88    // px  approximate rendered height of MatchSlot
+const ROW_GAP  = 16    // px  gap between sibling cards in same column
+const COL_GAP  = 44    // px  horizontal gap between columns (SVG connectors live here)
+const STEP     = CARD_H + ROW_GAP   // vertical increment in first column
 
-const ROUND_ABBREV = {
+const ROUND_HEADING = {
   quarter:     'Cuartos',
   semi:        'Semis',
   final:       'Final',
-  third_place: null,        // merged into Final column
-  consolation: 'Cuadro B',
+  third_place: 'Final',
 }
 
 function matchLabel(round, position) {
@@ -21,35 +25,139 @@ function matchLabel(round, position) {
   return `${position}`
 }
 
-// ── Build display structure from flat match rows ───────────────────────────────
-// Returns { columns: [{ heading, matches }], consolation: [match] }
+// ── Layout builder ────────────────────────────────────────────────────────────
+// Returns column mapping, Y positions per match, feeders map, and helpers.
 
-function buildStructure(matches) {
-  const byRound = {}
-  for (const m of matches) {
-    ;(byRound[m.round] ??= []).push(m)
+function buildLayout(matches) {
+  const mainMatches = matches.filter(m => m.round !== 'consolation')
+  const consolation = matches.filter(m => m.round === 'consolation')
+  const hasQuarters = mainMatches.some(m => m.round === 'quarter')
+
+  const colOf = round => {
+    if (round === 'quarter')     return 0
+    if (round === 'semi')        return hasQuarters ? 1 : 0
+    if (round === 'final')       return hasQuarters ? 2 : 1
+    if (round === 'third_place') return hasQuarters ? 2 : 1
+    return -1
   }
 
-  // Main bracket columns — quarter and/or semi, then final+third_place together
-  const COLUMN_ROUNDS = ['quarter', 'semi']
-  const columns = []
+  // Group into columns
+  const colMap = {}
+  for (const m of mainMatches) {
+    const c = colOf(m.round)
+    if (c < 0) continue
+    ;(colMap[c] ??= []).push(m)
+  }
+  const numCols = Object.keys(colMap).length
 
-  for (const round of COLUMN_ROUNDS) {
-    if (byRound[round]) {
-      columns.push({ heading: ROUND_ABBREV[round], matches: byRound[round] })
+  // Sort each column (final before third_place, otherwise by position)
+  for (const col of Object.values(colMap)) {
+    col.sort((a, b) => {
+      if (a.round === 'third_place') return 1
+      if (b.round === 'third_place') return -1
+      return a.position - b.position
+    })
+  }
+
+  // Feeders map: targetId → [feeder matches], sorted couple_a slot first (= top)
+  const feeders = {}
+  for (const m of mainMatches) {
+    if (m.next_match_id) {
+      ;(feeders[m.next_match_id] ??= []).push(m)
+    }
+  }
+  for (const list of Object.values(feeders)) {
+    list.sort((a, b) =>
+      (a.next_match_slot === 'couple_a' ? 0 : 1) -
+      (b.next_match_slot === 'couple_a' ? 0 : 1)
+    )
+  }
+
+  // Calculate Y positions
+  const yPos = {}
+
+  // Column 0: evenly spaced
+  ;(colMap[0] ?? []).forEach((m, i) => { yPos[m.id] = i * STEP })
+
+  // Subsequent columns: center each match between its two feeders
+  for (let c = 1; c < numCols; c++) {
+    const finalM = (colMap[c] ?? []).find(m => m.round === 'final')
+    const thirdM = (colMap[c] ?? []).find(m => m.round === 'third_place')
+
+    for (const m of (colMap[c] ?? [])) {
+      if (m.round === 'third_place') continue
+
+      const fs = (feeders[m.id] ?? []).filter(f => yPos[f.id] != null)
+      if (fs.length >= 2) {
+        const topCY = yPos[fs[0].id] + CARD_H / 2
+        const botCY = yPos[fs[fs.length - 1].id] + CARD_H / 2
+        yPos[m.id] = Math.round((topCY + botCY) / 2 - CARD_H / 2)
+      } else if (fs.length === 1) {
+        yPos[m.id] = yPos[fs[0].id]
+      } else {
+        yPos[m.id] = 0
+      }
+    }
+
+    // Third-place: below the final with extra gap
+    if (finalM && thirdM && yPos[finalM.id] != null) {
+      yPos[thirdM.id] = yPos[finalM.id] + CARD_H + ROW_GAP * 3
     }
   }
 
-  // Final column: final first, then third_place
-  const finalMatches = [
-    ...(byRound['final'] ?? []),
-    ...(byRound['third_place'] ?? []),
-  ]
-  if (finalMatches.length) {
-    columns.push({ heading: 'Final', matches: finalMatches })
+  // Total height of the bracket area
+  let totalH = 0
+  for (const y of Object.values(yPos)) {
+    if (y + CARD_H > totalH) totalH = y + CARD_H
   }
 
-  return { columns, consolation: byRound['consolation'] ?? [] }
+  // Column headings (derived from the main round present in each column)
+  const headings = []
+  for (let c = 0; c < numCols; c++) {
+    const col = colMap[c] ?? []
+    const mainRound = col.find(m => m.round !== 'third_place')?.round ?? col[0]?.round
+    headings.push(ROUND_HEADING[mainRound] ?? '')
+  }
+
+  return { colMap, numCols, feeders, yPos, consolation, headings, colOf, mainMatches, totalH }
+}
+
+// ── SVG path builder ──────────────────────────────────────────────────────────
+
+function buildPaths(colMap, numCols, feeders, yPos) {
+  const paths = []
+
+  for (let c = 0; c < numCols - 1; c++) {
+    const nextCol = colMap[c + 1] ?? []
+    const fromRX  = c * (CARD_W + COL_GAP) + CARD_W   // right edge of left column
+    const toX     = (c + 1) * (CARD_W + COL_GAP)       // left edge of right column
+    const midX    = fromRX + COL_GAP / 2
+
+    for (const to of nextCol) {
+      if (to.round === 'third_place') continue
+      const toY = yPos[to.id]
+      if (toY == null) continue
+      const toCY = toY + CARD_H / 2
+
+      const fs = (feeders[to.id] ?? []).filter(f => yPos[f.id] != null)
+      if (fs.length < 2) continue
+
+      const fCYs  = fs.map(f => yPos[f.id] + CARD_H / 2)
+      const topFY = Math.min(...fCYs)
+      const botFY = Math.max(...fCYs)
+
+      // Horizontal arm from each feeder right edge to midpoint
+      fCYs.forEach((fy, i) =>
+        paths.push({ d: `M ${fromRX} ${fy} H ${midX}`, key: `arm-${c}-${i}-${fy}` })
+      )
+      // Vertical spine connecting feeder arms
+      paths.push({ d: `M ${midX} ${topFY} V ${botFY}`, key: `spine-${c}-${to.id}` })
+      // Horizontal arm from midpoint to target left edge
+      paths.push({ d: `M ${midX} ${toCY} H ${toX}`, key: `out-${to.id}` })
+    }
+  }
+
+  return paths
 }
 
 // ── Match slot card ───────────────────────────────────────────────────────────
@@ -63,8 +171,11 @@ function MatchSlot({ match, isFinal }) {
   const label   = matchLabel(match.round, match.position)
 
   return (
-    <div className={`bg-surface border rounded-xl shadow-sm p-3 w-44
-      ${isFinal ? 'border-accent/50' : 'border-gray-100'}`}>
+    <div
+      className={`bg-surface border rounded-xl shadow-sm p-3
+        ${isFinal ? 'border-accent/50' : 'border-gray-100'}`}
+      style={{ width: CARD_W, minHeight: CARD_H }}
+    >
       <div className="text-xs font-semibold text-text-secondary mb-2">{label}</div>
       <div className={`flex items-center gap-1.5 py-1 border-b border-gray-100
         ${winnerA ? 'font-bold text-primary' : tbd ? 'text-text-secondary italic' : 'text-text-primary'}`}>
@@ -86,11 +197,12 @@ function MatchSlot({ match, isFinal }) {
   )
 }
 
-// ── Dummy fallback slot (pre-bracket generation) ──────────────────────────────
+// ── Dummy fallback slot ───────────────────────────────────────────────────────
 
 function DummySlot({ slot }) {
   return (
-    <div className="bg-surface border border-gray-100 rounded-xl shadow-sm p-3 w-44 opacity-60">
+    <div className="bg-surface border border-gray-100 rounded-xl shadow-sm p-3 opacity-60"
+      style={{ width: CARD_W, minHeight: CARD_H }}>
       <div className="text-xs font-semibold text-text-secondary mb-2">{slot.label}</div>
       <div className="flex items-center gap-1.5 py-1 border-b border-gray-100 text-text-secondary italic">
         <span className="w-1.5 h-1.5 rounded-full bg-gray-200 shrink-0" />
@@ -109,8 +221,17 @@ function DummySlot({ slot }) {
 export default function BracketView({ division }) {
   const { matches, loading } = useBracket(division)
 
-  // No bracket in DB yet — show dummy structure as placeholder
-  if (!loading && matches.length === 0) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-8 text-text-secondary text-sm">
+        <Spinner size="sm" />
+        <span>Cargando cuadro…</span>
+      </div>
+    )
+  }
+
+  // No bracket generated yet — show dummy placeholder structure
+  if (matches.length === 0) {
     const structure = KNOCKOUT_STRUCTURE[division]
     if (!structure) return null
     return (
@@ -144,37 +265,69 @@ export default function BracketView({ division }) {
     )
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-8 text-text-secondary text-sm">
-        <Spinner size="sm" />
-        <span>Cargando cuadro…</span>
-      </div>
-    )
-  }
+  const { colMap, numCols, feeders, yPos, consolation, headings, colOf, mainMatches, totalH } =
+    buildLayout(matches)
 
-  const { columns, consolation } = buildStructure(matches)
+  const totalW  = numCols * CARD_W + (numCols - 1) * COL_GAP
+  const svgPaths = buildPaths(colMap, numCols, feeders, yPos)
 
   return (
     <div className="space-y-8">
-      {/* Main bracket */}
       <div className="overflow-x-auto pb-2 -mx-1 px-1">
         <p className="text-xs text-text-secondary mb-2 sm:hidden">← Desliza para ver el cuadro completo →</p>
-        <div className="flex gap-8 min-w-max items-start">
-          {columns.map(({ heading, matches: colMatches }) => (
-            <div key={heading} className="flex flex-col gap-3">
-              <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-widest text-center">
-                {heading}
-              </h3>
-              {colMatches.map(m => (
-                <MatchSlot key={m.id} match={m} isFinal={m.round === 'final'} />
-              ))}
+
+        {/* Column headings */}
+        <div style={{ display: 'flex', marginBottom: 10, width: totalW }}>
+          {headings.map((h, c) => (
+            <div key={c} style={{
+              width: CARD_W,
+              marginRight: c < numCols - 1 ? COL_GAP : 0,
+              textAlign: 'center',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#64748b',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>
+              {h}
             </div>
           ))}
         </div>
+
+        {/* Bracket area — absolutely positioned cards + SVG overlay */}
+        <div style={{ position: 'relative', width: totalW, height: totalH + 8 }}>
+          {/* SVG connector lines */}
+          <svg
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: 0, left: 0,
+              width: '100%', height: '100%',
+              pointerEvents: 'none', overflow: 'visible',
+            }}
+          >
+            {svgPaths.map(({ d, key }) => (
+              <path key={key} d={d} fill="none" stroke="#e2e8f0" strokeWidth={1.5} strokeLinecap="round" />
+            ))}
+          </svg>
+
+          {/* Match cards */}
+          {mainMatches.map(m => {
+            const c = colOf(m.round)
+            const y = yPos[m.id]
+            if (c < 0 || y == null) return null
+            return (
+              <div
+                key={m.id}
+                style={{ position: 'absolute', left: c * (CARD_W + COL_GAP), top: y }}
+              >
+                <MatchSlot match={m} isFinal={m.round === 'final'} />
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Consolation matches */}
+      {/* Consolation bracket — stays as a grid */}
       {consolation.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
