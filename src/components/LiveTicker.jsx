@@ -5,10 +5,10 @@ import { DIVISION_CONFIG } from '../lib/divisions.js'
 async function fetchLiveMatches() {
   const { data } = await supabase
     .from('matches')
-    .select('court, division, group_code, score_a, score_b, status, couple_a:couple_a_id(team_name), couple_b:couple_b_id(team_name)')
-    .in('status', ['pending_confirmation', 'confirmed'])
+    .select('court, division, group_code, score_a, couple_a:couple_a_id(team_name), couple_b:couple_b_id(team_name)')
+    .eq('status', 'confirmed')
     .order('confirmed_at', { ascending: false })
-    .limit(8)
+    .limit(10)
   return data ?? []
 }
 
@@ -21,7 +21,7 @@ export default function LiveTicker() {
       setItems(data.map(m => ({
         court: m.court ?? '',
         div: `${DIVISION_CONFIG[m.division]?.label ?? m.division}${m.group_code ? ' ' + m.group_code : ''}`,
-        score: m.score_a ?? '',
+        label: `${m.couple_a?.team_name ?? '?'} ${m.score_a ?? ''} ${m.couple_b?.team_name ?? '?'}`,
       })))
     })
   }, [])
@@ -90,7 +90,7 @@ export default function LiveTicker() {
           flexShrink: 0,
         }} />
         <span style={{ color: 'white', fontSize: 10, fontWeight: 700, letterSpacing: '1px', whiteSpace: 'nowrap' }}>
-          EN DIRECTO{liveCount > 0 ? ` ${liveCount}` : ''}
+          ÚLTIMOS RESULTADOS{liveCount > 0 ? ` · ${liveCount}` : ''}
         </span>
       </div>
 
@@ -104,12 +104,9 @@ export default function LiveTicker() {
       }}>
         {displayItems.map((m, i) => (
           <span key={i} style={{ color: 'rgba(255,255,255,.85)', fontSize: 11 }}>
-            <span style={{ color: '#11efb5', fontWeight: 600 }}>{m.court}</span>
-            {m.court && ' · '}
-            {m.div}
-            {m.score && (
-              <span style={{ color: '#11efb5', fontWeight: 700 }}> {m.score}</span>
-            )}
+            {m.court && <span style={{ color: '#11efb5', fontWeight: 600 }}>{m.court} · </span>}
+            <span style={{ color: 'rgba(255,255,255,.5)' }}>{m.div} · </span>
+            {m.label}
           </span>
         ))}
       </div>

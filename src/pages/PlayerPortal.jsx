@@ -331,7 +331,9 @@ function AuthenticatedPortal() {
               <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#001d72' }}>
                 {t('portal.history')}
               </div>
-              {sorted.map((match, idx) => (
+              {sorted
+                .filter(m => m.id !== nextMatch?.id)  // nextMatch has its own card above
+                .map((match, idx, arr) => (
                 <MatchRow
                   key={match.id}
                   match={match}
@@ -343,7 +345,7 @@ function AuthenticatedPortal() {
                   onScoreSubmitted={() => handleScoreSubmitted(match.id)}
                   onConfirm={() => handleConfirm(match.id)}
                   onDispute={() => handleDispute(match.id)}
-                  isLast={idx === sorted.length - 1}
+                  isLast={idx === arr.length - 1}
                 />
               ))}
             </div>
@@ -396,10 +398,15 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           textAlign: 'left',
         }}
       >
-        {/* Court / time */}
+        {/* Court / finish time */}
         <div style={{ fontSize: 9, color: '#b0b8c8', flexShrink: 0, minWidth: 60 }}>
           {match.court && <div style={{ color: '#11efb5', fontWeight: 600 }}>{match.court}</div>}
-          {match.time_slot && <div>{match.time_slot}</div>}
+          {match.confirmed_at
+            ? <div style={{ color: '#0cb882' }}>
+                {new Date(match.confirmed_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            : match.time_slot && <div>{match.time_slot}</div>
+          }
         </div>
 
         {/* Couple A */}
