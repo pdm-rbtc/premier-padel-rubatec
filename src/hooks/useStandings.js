@@ -16,7 +16,9 @@ export function useStandings(division, groupCode) {
       .select('*, couple:couple_id(*)')
       .eq('division', division)
       .eq('group_code', groupCode)
-      .order('rank')
+      .order('rank', { nullsFirst: false })
+      .order('points', { ascending: false })
+      .order('game_differential', { ascending: false })
       .then(({ data, error }) => {
         if (error) setError(error)
         else setStandings(data ?? [])

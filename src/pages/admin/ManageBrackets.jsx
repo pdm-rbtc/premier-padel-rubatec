@@ -26,7 +26,9 @@ async function fetchStandings(division) {
       .select('couple_id, points, game_differential, rank, couple:couple_id(team_name)')
       .eq('division', division)
       .eq('group_code', gc)
-      .order('rank')
+      .order('rank', { nullsFirst: false })
+      .order('points', { ascending: false })
+      .order('game_differential', { ascending: false })
 
     standingsByGroup[gc] = data?.length
       ? data

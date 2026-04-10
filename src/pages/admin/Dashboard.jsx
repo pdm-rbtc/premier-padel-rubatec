@@ -24,6 +24,13 @@ function DashboardContent() {
   const [devEmail, setDevEmail] = useState('')
   const [devError, setDevError] = useState('')
   const [devLoading, setDevLoading] = useState(false)
+  const [randomizing, setRandomizing] = useState(false)
+
+  async function handleRandomize() {
+    setRandomizing(true)
+    await supabase.rpc('randomize_group_results')
+    setRandomizing(false)
+  }
 
   const SECTIONS = [
     { to: '/admin/couples',  label: t('admin.couples'),  icon: '👥', desc: t('admin.manage_couples_desc') },
@@ -203,6 +210,26 @@ function DashboardContent() {
         {devError && (
           <p style={{ color: '#ef4444', fontSize: 11, marginTop: 6 }}>{devError}</p>
         )}
+
+        {/* Randomize groups */}
+        <div style={{ marginTop: 16, borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
+          <p style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
+            {t('admin.dev_randomize_desc')}
+          </p>
+          <button onClick={handleRandomize} disabled={randomizing} style={{
+            background: randomizing ? '#f1f5f9' : 'rgba(4,51,255,.07)',
+            color: randomizing ? '#94a3b8' : '#0433FF',
+            border: '1px solid',
+            borderColor: randomizing ? '#e2e8f0' : 'rgba(4,51,255,.2)',
+            borderRadius: 8,
+            padding: '7px 16px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: randomizing ? 'default' : 'pointer',
+          }}>
+            {randomizing ? t('admin.dev_randomizing') : t('admin.dev_randomize')}
+          </button>
+        </div>
       </div>
 
       {/* Reset scores */}
