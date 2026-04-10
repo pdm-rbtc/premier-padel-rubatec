@@ -4,7 +4,6 @@ import GroupTable from '../components/GroupTable.jsx'
 import BracketView from '../components/BracketView.jsx'
 import Timeline from '../components/Timeline.jsx'
 import { DIVISION_CONFIG, DIVISIONS } from '../lib/divisions.js'
-import { getDummyStandings } from '../lib/dummy.js'
 import { supabase } from '../lib/supabase.js'
 import { useI18n } from '../i18n/index.jsx'
 
@@ -138,7 +137,6 @@ export default function Home() {
             key={`${activeDiv}-${g}`}
             division={activeDiv}
             groupCode={g}
-            standings={getDummyStandings(activeDiv, g)}
           />
         ))}
       </div>

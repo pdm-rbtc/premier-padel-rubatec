@@ -5,6 +5,7 @@ import { generateBracket, matchLabel, ROUND_LABELS } from '../../lib/bracketEngi
 import { getDummyStandings } from '../../lib/dummy.js'
 import { DIVISION_CONFIG, DIVISIONS } from '../../lib/divisions.js'
 import Spinner from '../../components/Spinner.jsx'
+import { useI18n } from '../../i18n/index.jsx'
 
 const GROUP_CODES = {
   diamant: ['G1', 'G2', 'G3'],
@@ -82,6 +83,7 @@ export default function ManageBrackets() {
 }
 
 function ManageBracketsContent() {
+  const { t } = useI18n()
   const [divisionState, setDivisionState] = useState({
     diamant: { loading: true, complete: false, exists: false },
     or:      { loading: true, complete: false, exists: false },
@@ -102,10 +104,8 @@ function ManageBracketsContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">Cuadros eliminatorios</h1>
-        <p className="text-sm text-text-secondary mt-1">
-          Genera la fase eliminatoria para cada división una vez completada la fase de grupos.
-        </p>
+        <h1 className="text-2xl font-bold text-primary">{t('brackets.title')}</h1>
+        <p className="text-sm text-text-secondary mt-1">{t('brackets.subtitle')}</p>
       </div>
 
       <div className="space-y-4">
@@ -132,6 +132,7 @@ function ManageBracketsContent() {
 // ── Per-division card ─────────────────────────────────────────────────────────
 
 function DivisionCard({ division, state, expanded, onToggle, onGenerated, onCleared }) {
+  const { t } = useI18n()
   const [preview, setPreview]       = useState(null)   // { matches, coupleMap }
   const [saving, setSaving]         = useState(false)
   const [clearing, setClearing]     = useState(false)
@@ -200,12 +201,12 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
   }
 
   const statusBadge = state.loading
-    ? { text: null,                  cls: 'bg-gray-100 text-gray-400' }
+    ? { text: null,                              cls: 'bg-gray-100 text-gray-400' }
     : state.exists
-      ? { text: 'Generado',          cls: 'bg-green-100 text-green-700' }
+      ? { text: t('brackets.status_generated'), cls: 'bg-green-100 text-green-700' }
       : state.complete
-        ? { text: 'Listo',           cls: 'bg-accent/20 text-primary' }
-        : { text: 'Grupos incompl.', cls: 'bg-yellow-100 text-yellow-700' }
+        ? { text: t('brackets.status_ready'),   cls: 'bg-accent/20 text-primary' }
+        : { text: t('brackets.status_incomplete'), cls: 'bg-yellow-100 text-yellow-700' }
 
   return (
     <div className="bg-surface border border-gray-100 rounded-xl shadow-sm overflow-hidden">
@@ -220,7 +221,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
         <div className="flex-1">
           <div className="font-semibold text-text-primary">{name}</div>
           <div className="text-xs text-text-secondary mt-0.5">
-            {GROUP_CODES[division].length} grupos · {GROUP_CODES[division].length * 4} parejas
+            {GROUP_CODES[division].length} {t('brackets.groups_summary').split('·')[0].trim()} · {GROUP_CODES[division].length * 4} {t('brackets.groups_summary').split('·')[1].trim()}
           </div>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5 ${statusBadge.cls}`}>
@@ -235,8 +236,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
           {/* Warning when groups not complete (but allow forced generation) */}
           {!state.complete && !state.loading && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-yellow-800">
-              La fase de grupos no está completada. Puedes generar el cuadro de todas formas,
-              pero los emparejamientos reflejarán las clasificaciones actuales.
+              {t('brackets.warning_incomplete')}
             </div>
           )}
 
@@ -253,7 +253,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
                 onClick={handleGenerate}
                 className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
               >
-                Generar cuadro
+                {t('brackets.btn_generate')}
               </button>
             )}
 
@@ -263,13 +263,13 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
                   onClick={handleGenerate}
                   className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
                 >
-                  Ver / regenerar
+                  {t('brackets.btn_regenerate')}
                 </button>
                 <button
                   onClick={() => setConfirmClear(true)}
                   className="border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
                 >
-                  Limpiar cuadro
+                  {t('brackets.btn_clear')}
                 </button>
               </>
             )}
@@ -277,15 +277,15 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
             {confirmClear && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-red-600 font-medium">
-                  ¿Eliminar todos los partidos eliminatorios de {name}?
+                  ¿{t('brackets.confirm_clear')} {name}?
                 </span>
                 <button onClick={handleClear} disabled={clearing}
                   className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
-                  {clearing ? 'Eliminando…' : 'Confirmar'}
+                  {clearing ? t('brackets.btn_clearing') : t('brackets.btn_confirm')}
                 </button>
                 <button onClick={() => setConfirmClear(false)}
                   className="border border-gray-200 text-text-secondary px-3 py-1.5 rounded-lg text-sm">
-                  Cancelar
+                  {t('brackets.btn_cancel')}
                 </button>
               </div>
             )}
@@ -301,13 +301,13 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
                   disabled={saving}
                   className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
                 >
-                  {saving ? 'Guardando…' : `Guardar en base de datos (${preview.matches.length} partidos)`}
+                  {saving ? t('brackets.btn_saving') : `${t('brackets.btn_save')} (${preview.matches.length})`}
                 </button>
                 <button
                   onClick={() => setPreview(null)}
                   className="border border-gray-200 text-text-secondary px-4 py-2.5 rounded-lg text-sm hover:border-gray-300"
                 >
-                  Descartar
+                  {t('brackets.btn_discard')}
                 </button>
               </div>
             </div>
@@ -321,6 +321,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
 // ── Bracket preview table ─────────────────────────────────────────────────────
 
 function BracketPreview({ matches, coupleMap }) {
+  const { t } = useI18n()
   const rounds = [...new Set(matches.map(m => m.round))]
   const ROUND_ORDER = ['quarter', 'semi', 'final', 'third_place', 'consolation']
   rounds.sort((a, b) => ROUND_ORDER.indexOf(a) - ROUND_ORDER.indexOf(b))
@@ -343,11 +344,11 @@ function BracketPreview({ matches, coupleMap }) {
                     {m.position}
                   </span>
                   <span className={`flex-1 truncate ${m.couple_a_id ? 'text-text-primary' : 'text-text-secondary italic'}`}>
-                    {m.couple_a_id ? coupleMap[m.couple_a_id]?.team_name ?? 'Desconocido' : 'Por determinar'}
+                    {m.couple_a_id ? coupleMap[m.couple_a_id]?.team_name ?? t('brackets.unknown') : t('brackets.tbd')}
                   </span>
                   <span className="text-text-secondary text-xs shrink-0">vs</span>
                   <span className={`flex-1 truncate text-right ${m.couple_b_id ? 'text-text-primary' : 'text-text-secondary italic'}`}>
-                    {m.couple_b_id ? coupleMap[m.couple_b_id]?.team_name ?? 'Desconocido' : 'Por determinar'}
+                    {m.couple_b_id ? coupleMap[m.couple_b_id]?.team_name ?? t('brackets.unknown') : t('brackets.tbd')}
                   </span>
                   {m.next_match_id && (
                     <span className="text-xs text-accent shrink-0" title="Ganador avanza automáticamente">→</span>

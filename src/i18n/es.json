@@ -112,6 +112,28 @@
     "start_tournament": "▶ Iniciar Torneo",
     "stop_tournament": "■ Detener Torneo"
   },
+  "brackets": {
+    "title": "Cuadros eliminatorios",
+    "subtitle": "Genera la fase eliminatoria para cada división una vez completada la fase de grupos.",
+    "status_generated": "Generado",
+    "status_ready": "Listo",
+    "status_incomplete": "Grupos incompl.",
+    "groups_summary": "grupos · parejas",
+    "warning_incomplete": "La fase de grupos no está completada. Puedes generar el cuadro de todas formas, pero los emparejamientos reflejarán las clasificaciones actuales.",
+    "btn_generate": "Generar cuadro",
+    "btn_regenerate": "Ver / regenerar",
+    "btn_clear": "Limpiar cuadro",
+    "confirm_clear": "¿Eliminar todos los partidos eliminatorios de",
+    "btn_confirm": "Confirmar",
+    "btn_cancel": "Cancelar",
+    "btn_clearing": "Eliminando…",
+    "btn_saving": "Guardando…",
+    "btn_save": "Guardar en base de datos",
+    "btn_discard": "Descartar",
+    "consolation": "Cuadro B",
+    "tbd": "Por determinar",
+    "unknown": "Desconocido"
+  },
   "errors": {
     "not_authorized": "No tienes permiso para esta acción",
     "not_found": "No encontrado"

@@ -87,6 +87,7 @@ export default function PlayerPortal() {
 
 // ── Authenticated portal ──────────────────────────────────────────────────────
 function AuthenticatedPortal() {
+  const { t } = useI18n()
   const { user, profile, coupleId, loading: authLoading } = useAuth()
   const { matches, loading: matchLoading, setMatches, connected } = useMatches(
     coupleId ? { coupleId } : {}
