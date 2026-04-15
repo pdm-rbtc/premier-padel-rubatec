@@ -74,6 +74,12 @@ export default function ManageCouples() {
   )
 }
 
+// Charset excludes 0/O, 1/I/L to avoid confusion when reading aloud
+const PIN_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+function generatePin(len = 6) {
+  return Array.from({ length: len }, () => PIN_CHARS[Math.floor(Math.random() * PIN_CHARS.length)]).join('')
+}
+
 function ManageCouplesContent() {
   const [couples, setCouples]       = useState([])
   const [loading, setLoading]       = useState(true)
@@ -84,6 +90,36 @@ function ManageCouplesContent() {
   const [parseErrors, setParseErrors] = useState([])
   const [importing, setImporting]   = useState(false)
   const [importResult, setImportResult] = useState(null)
+
+  // PIN editing state
+  const [editingPinId, setEditingPinId] = useState(null)
+  const [pinDraft, setPinDraft]         = useState('')
+  const [pinSaving, setPinSaving]       = useState(false)
+  const [pinError, setPinError]         = useState('')
+  const [copiedId, setCopiedId]         = useState(null)
+
+  async function savePin(coupleId) {
+    const value = pinDraft.toUpperCase().trim()
+    if (!value) return
+    setPinSaving(true)
+    setPinError('')
+    const { error } = await supabase.from('couples').update({ login_pin: value }).eq('id', coupleId)
+    setPinSaving(false)
+    if (error) {
+      setPinError(error.message.includes('unique') ? 'Este PIN ya está en uso.' : error.message)
+    } else {
+      setCouples(prev => prev.map(c => c.id === coupleId ? { ...c, login_pin: value } : c))
+      setEditingPinId(null)
+      setPinDraft('')
+    }
+  }
+
+  function copyPin(pin, id) {
+    navigator.clipboard.writeText(pin).then(() => {
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 1500)
+    })
+  }
   const fileRef = useRef()
 
   useEffect(() => {
@@ -346,6 +382,66 @@ function ManageCouplesContent() {
                               <div className="text-xs text-text-secondary/60 mt-0.5">
                                 {[c.centre, c.department].filter(Boolean).join(' · ')}
                               </div>
+                            )}
+
+                            {/* PIN row */}
+                            {editingPinId === c.id ? (
+                              <div style={{ display: 'flex', gap: 4, marginTop: 6, alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  value={pinDraft}
+                                  onChange={e => { setPinDraft(e.target.value.toUpperCase()); setPinError('') }}
+                                  onKeyDown={e => { if (e.key === 'Enter') savePin(c.id); if (e.key === 'Escape') { setEditingPinId(null); setPinDraft('') } }}
+                                  maxLength={8}
+                                  autoFocus
+                                  placeholder="PIN"
+                                  style={{
+                                    flex: 1, border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                                    borderRadius: 6, padding: '3px 7px', fontSize: 11, fontWeight: 700,
+                                    letterSpacing: 2, fontFamily: 'DM Mono, monospace', outline: 'none', color: '#001d72',
+                                  }}
+                                />
+                                <button onClick={() => { setPinDraft(generatePin()); setPinError('') }}
+                                  style={{ fontSize: 10, padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: 5, cursor: 'pointer', background: 'white', color: '#64748b', whiteSpace: 'nowrap' }}>
+                                  ↺ Generar
+                                </button>
+                                <button onClick={() => savePin(c.id)} disabled={pinSaving}
+                                  style={{ fontSize: 10, padding: '3px 8px', border: 'none', borderRadius: 5, cursor: 'pointer', background: '#001d72', color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                  {pinSaving ? '…' : 'Guardar'}
+                                </button>
+                                <button onClick={() => { setEditingPinId(null); setPinDraft(''); setPinError('') }}
+                                  style={{ fontSize: 10, padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: 5, cursor: 'pointer', background: 'white', color: '#94a3b8' }}>
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
+                                {c.login_pin ? (
+                                  <>
+                                    <span style={{
+                                      fontFamily: 'DM Mono, monospace', fontWeight: 700, fontSize: 11,
+                                      letterSpacing: 2, color: '#0433FF', background: 'rgba(4,51,255,.07)',
+                                      padding: '2px 7px', borderRadius: 5,
+                                    }}>{c.login_pin}</span>
+                                    <button onClick={() => copyPin(c.login_pin, c.id)}
+                                      style={{ fontSize: 10, padding: '2px 5px', border: '1px solid #e2e8f0', borderRadius: 4, cursor: 'pointer', background: 'white', color: copiedId === c.id ? '#0cb882' : '#94a3b8' }}>
+                                      {copiedId === c.id ? '✓' : '⎘'}
+                                    </button>
+                                    <button onClick={() => { setEditingPinId(c.id); setPinDraft(c.login_pin ?? ''); setPinError('') }}
+                                      style={{ fontSize: 10, padding: '2px 5px', border: '1px solid #e2e8f0', borderRadius: 4, cursor: 'pointer', background: 'white', color: '#64748b' }}>
+                                      ✎
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button onClick={() => { setEditingPinId(c.id); setPinDraft(generatePin()); setPinError('') }}
+                                    style={{ fontSize: 10, padding: '2px 8px', border: '1px dashed #e2e8f0', borderRadius: 5, cursor: 'pointer', background: 'white', color: '#94a3b8' }}>
+                                    + Asignar PIN
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {editingPinId === c.id && pinError && (
+                              <p style={{ color: '#ef4444', fontSize: 10, marginTop: 3 }}>{pinError}</p>
                             )}
                           </div>
                         ))}

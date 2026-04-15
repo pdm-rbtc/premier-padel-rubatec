@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
+import { useDevMode } from '../contexts/DevMode.jsx'
 
 export default function ScoreInput({ match, onSuccess }) {
   const { coupleId } = useAuth()
+  const devMode = useDevMode()
+  const isPinSession = devMode.active && devMode.pinSession
+
   const [gA, setGA] = useState('')
   const [gB, setGB] = useState('')
   const [error, setError] = useState(null)
@@ -27,17 +31,30 @@ export default function ScoreInput({ match, onSuccess }) {
     setSubmitting(true)
     setError(null)
 
-    const { error: dbError } = await supabase
-      .from('matches')
-      .update({
-        score_a: `${a}-${b}`,
-        score_b: `${b}-${a}`,
-        games_a: a,
-        games_b: b,
-        status: 'pending_confirmation',
-        submitted_by: coupleId,
+    let dbError
+    if (isPinSession) {
+      // PIN sessions bypass RLS via SECURITY DEFINER RPC
+      const res = await supabase.rpc('submit_score_pin', {
+        p_match_id: match.id,
+        p_pin:      devMode.pin,
+        p_games_a:  a,
+        p_games_b:  b,
       })
-      .eq('id', match.id)
+      dbError = res.error
+    } else {
+      const res = await supabase
+        .from('matches')
+        .update({
+          score_a:      `${a}-${b}`,
+          score_b:      `${b}-${a}`,
+          games_a:      a,
+          games_b:      b,
+          status:       'pending_confirmation',
+          submitted_by: coupleId,
+        })
+        .eq('id', match.id)
+      dbError = res.error
+    }
 
     setSubmitting(false)
     if (dbError) setError(dbError.message)

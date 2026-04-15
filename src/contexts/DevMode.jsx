@@ -1,25 +1,26 @@
 import { createContext, useContext, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 
+const EMPTY = { active: false, email: '', coupleId: null, coupleInfo: null, pinSession: false, pin: '' }
+
 const DevModeContext = createContext({
-  active: false,
-  email: '',
-  coupleId: null,
-  coupleInfo: null,
-  setDev: async () => ({ error: 'not ready' }),
-  clearDev: () => {},
+  ...EMPTY,
+  setDev:      async () => ({ error: 'not ready' }),
+  setDevByPin: async () => ({ error: 'not ready' }),
+  clearDev:    () => {},
 })
 
 export function DevModeProvider({ children }) {
   const [state, setState] = useState(() => {
     try {
       const s = localStorage.getItem('devMode')
-      return s ? JSON.parse(s) : { active: false, email: '', coupleId: null, coupleInfo: null }
+      return s ? { ...EMPTY, ...JSON.parse(s) } : EMPTY
     } catch {
-      return { active: false, email: '', coupleId: null, coupleInfo: null }
+      return EMPTY
     }
   })
 
+  // Email-based impersonation (admin dev tool)
   async function setDev(email) {
     const { data: user } = await supabase
       .from('users')
@@ -38,7 +39,31 @@ export function DevModeProvider({ children }) {
 
     if (!couple) return { error: 'couple_not_found' }
 
-    const next = { active: true, email: email.toLowerCase().trim(), coupleId: couple.id, coupleInfo: couple }
+    const next = { active: true, email: email.toLowerCase().trim(), coupleId: couple.id, coupleInfo: couple, pinSession: false, pin: '' }
+    localStorage.setItem('devMode', JSON.stringify(next))
+    setState(next)
+    return {}
+  }
+
+  // PIN-based session (for players without @rubatec.cat)
+  async function setDevByPin(pin) {
+    const normalized = pin.toUpperCase().trim()
+    if (!normalized) return { error: 'pin_empty' }
+
+    const { data, error } = await supabase.rpc('couple_by_pin', { p_pin: normalized })
+
+    if (error) return { error: 'pin_not_found' }
+    if (!data?.length) return { error: 'pin_not_found' }
+
+    const couple = data[0]
+    const next = {
+      active:     true,
+      email:      '',
+      coupleId:   couple.couple_id,
+      coupleInfo: { id: couple.couple_id, team_name: couple.team_name, division: couple.division, group_code: couple.group_code },
+      pinSession: true,
+      pin:        normalized,
+    }
     localStorage.setItem('devMode', JSON.stringify(next))
     setState(next)
     return {}
@@ -46,11 +71,11 @@ export function DevModeProvider({ children }) {
 
   function clearDev() {
     localStorage.removeItem('devMode')
-    setState({ active: false, email: '', coupleId: null, coupleInfo: null })
+    setState(EMPTY)
   }
 
   return (
-    <DevModeContext.Provider value={{ ...state, setDev, clearDev }}>
+    <DevModeContext.Provider value={{ ...state, setDev, setDevByPin, clearDev }}>
       {children}
     </DevModeContext.Provider>
   )

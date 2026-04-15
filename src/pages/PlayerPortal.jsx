@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
+import { useDevMode } from '../contexts/DevMode.jsx'
 import { signInWithGoogle, signOut } from '../lib/auth.js'
 import { useMatches } from '../hooks/useMatches.js'
 import ScoreInput from '../components/ScoreInput.jsx'
@@ -38,10 +39,26 @@ function StatusBadge({ status }) {
 export default function PlayerPortal() {
   const { t } = useI18n()
   const { user, loading } = useAuth()
+  const devMode = useDevMode()
+
+  const [showPin, setShowPin]       = useState(false)
+  const [pinInput, setPinInput]     = useState('')
+  const [pinLoading, setPinLoading] = useState(false)
+  const [pinError, setPinError]     = useState('')
+
+  async function handlePinLogin() {
+    if (!pinInput.trim()) return
+    setPinLoading(true)
+    setPinError('')
+    const result = await devMode.setDevByPin(pinInput)
+    setPinLoading(false)
+    if (result.error) setPinError(t('portal.pin_not_found'))
+  }
 
   if (loading) return null
 
-  if (!user) {
+  // Allow access if real user OR active PIN session
+  if (!user && !(devMode.active && devMode.pinSession)) {
     return (
       <div style={{ maxWidth: 380, margin: '60px auto 0', textAlign: 'center' }}>
         <div style={{
@@ -55,6 +72,8 @@ export default function PlayerPortal() {
           <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.5, margin: '0 0 28px' }}>
             {t('portal.login_subtitle')}
           </p>
+
+          {/* Google login */}
           <button
             onClick={signInWithGoogle}
             style={{
@@ -77,6 +96,88 @@ export default function PlayerPortal() {
             <GoogleIcon />
             {t('portal.login_google')}
           </button>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 16px' }}>
+            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('portal.login_or')}</span>
+            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+          </div>
+
+          {/* PIN login toggle */}
+          {!showPin ? (
+            <button
+              onClick={() => setShowPin(true)}
+              style={{
+                width: '100%',
+                background: 'rgba(0,29,114,.04)',
+                border: '1px solid rgba(0,29,114,.12)',
+                color: '#001d72',
+                padding: '11px 20px',
+                borderRadius: 12,
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              🔑 {t('portal.login_pin')}
+            </button>
+          ) : (
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
+                {t('portal.pin_desc')}
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={pinInput}
+                  onChange={e => { setPinInput(e.target.value.toUpperCase()); setPinError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handlePinLogin()}
+                  placeholder={t('portal.pin_placeholder')}
+                  maxLength={8}
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    letterSpacing: 3,
+                    textAlign: 'center',
+                    outline: 'none',
+                    fontFamily: 'DM Mono, monospace',
+                    color: '#001d72',
+                  }}
+                />
+                <button
+                  onClick={handlePinLogin}
+                  disabled={pinLoading}
+                  style={{
+                    background: pinLoading ? '#f1f5f9' : '#001d72',
+                    color: pinLoading ? '#94a3b8' : 'white',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '10px 18px',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: pinLoading ? 'default' : 'pointer',
+                  }}
+                >
+                  {pinLoading ? '…' : t('portal.pin_apply')}
+                </button>
+              </div>
+              {pinError && (
+                <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{pinError}</p>
+              )}
+              <button
+                onClick={() => { setShowPin(false); setPinInput(''); setPinError('') }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', marginTop: 8 }}
+              >
+                {t('portal.pin_cancel')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -89,6 +190,9 @@ export default function PlayerPortal() {
 function AuthenticatedPortal() {
   const { t } = useI18n()
   const { user, profile, coupleId, loading: authLoading } = useAuth()
+  const devMode = useDevMode()
+  const isPinSession = devMode.active && devMode.pinSession
+
   const { matches, loading: matchLoading, setMatches, connected } = useMatches(
     coupleId ? { coupleId } : {}
   )
@@ -97,9 +201,14 @@ function AuthenticatedPortal() {
 
   useEffect(() => {
     if (!coupleId) return
+    // For PIN sessions, coupleInfo is already in devMode context
+    if (isPinSession && devMode.coupleInfo) {
+      setCoupleInfo(devMode.coupleInfo)
+      return
+    }
     supabase.from('couples').select('*').eq('id', coupleId).single()
       .then(({ data }) => { if (data) setCoupleInfo(data) })
-  }, [coupleId])
+  }, [coupleId, isPinSession])
 
   const isLoading = authLoading || matchLoading
 
@@ -127,47 +236,79 @@ function AuthenticatedPortal() {
   }
 
   async function handleConfirm(matchId) {
-    const { error } = await supabase.rpc('confirm_match', {
-      p_match_id: matchId,
-      p_actor_id: user.id,
-    })
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'confirmed' } : m))
+    if (isPinSession) {
+      const { error } = await supabase.rpc('confirm_match_pin', {
+        p_match_id: matchId,
+        p_pin:      devMode.pin,
+        p_action:   'confirm',
+      })
+      if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'confirmed' } : m))
+    } else {
+      const { error } = await supabase.rpc('confirm_match', {
+        p_match_id: matchId,
+        p_actor_id: user.id,
+      })
+      if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'confirmed' } : m))
+    }
   }
 
   async function handleDispute(matchId) {
-    const { error } = await supabase.from('matches').update({ status: 'disputed' }).eq('id', matchId)
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'disputed' } : m))
+    if (isPinSession) {
+      const { error } = await supabase.rpc('confirm_match_pin', {
+        p_match_id: matchId,
+        p_pin:      devMode.pin,
+        p_action:   'dispute',
+      })
+      if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'disputed' } : m))
+    } else {
+      const { error } = await supabase.from('matches').update({ status: 'disputed' }).eq('id', matchId)
+      if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'disputed' } : m))
+    }
   }
 
-  const displayName = profile?.display_name ?? user?.user_metadata?.full_name ?? user?.email
+  function handleSignOut() {
+    if (isPinSession) {
+      devMode.clearDev()
+    } else {
+      signOut()
+    }
+  }
+
+  const displayName = isPinSession
+    ? coupleInfo?.team_name ?? devMode.coupleInfo?.team_name
+    : (profile?.display_name ?? user?.user_metadata?.full_name ?? user?.email)
+
+  const userLabel = isPinSession
+    ? `PIN · ${devMode.coupleInfo?.team_name ?? ''}`
+    : user?.email
 
   return (
     <div style={{ maxWidth: 460, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {/* User info strip */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {user?.user_metadata?.avatar_url ? (
+          {!isPinSession && user?.user_metadata?.avatar_url ? (
             <img src={user.user_metadata.avatar_url} alt=""
               style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #e2e8f0' }} />
           ) : (
             <div style={{
               width: 28, height: 28, borderRadius: '50%',
-              background: 'rgba(0,29,114,.08)',
+              background: isPinSession ? 'rgba(4,51,255,.08)' : 'rgba(0,29,114,.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#001d72', fontWeight: 700, fontSize: 12,
+              color: isPinSession ? '#0433FF' : '#001d72', fontWeight: 700, fontSize: 12,
             }}>
-              {displayName?.[0]?.toUpperCase()}
+              {isPinSession ? '🔑' : displayName?.[0]?.toUpperCase()}
             </div>
           )}
-          <span style={{ fontSize: 12, color: '#64748b' }}>{user?.email}</span>
+          <span style={{ fontSize: 12, color: '#64748b' }}>{userLabel}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <LiveBadge connected={connected} />
-          <button onClick={signOut} style={{
+          <button onClick={handleSignOut} style={{
             fontSize: 11, color: '#94a3b8', background: 'none', border: 'none',
             cursor: 'pointer', padding: '2px 6px', borderRadius: 6,
           }}>
-            {t('portal.logout')}
+            {isPinSession ? t('portal.pin_exit') : t('portal.logout')}
           </button>
         </div>
       </div>
@@ -202,7 +343,6 @@ function AuthenticatedPortal() {
             position: 'relative',
             overflow: 'hidden',
           }}>
-            {/* Decorative circle */}
             <div style={{
               position: 'absolute', top: -30, right: -30,
               width: 120, height: 120, borderRadius: '50%',
@@ -238,7 +378,6 @@ function AuthenticatedPortal() {
                   {t('portal.next_match').toUpperCase()}
                 </div>
               </div>
-              {/* Court + time + badge */}
               <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ fontSize: 11, color: '#64748b' }}>
                   {nextMatch.court && <span style={{ color: '#11efb5', fontWeight: 600 }}>{nextMatch.court}</span>}
@@ -247,7 +386,6 @@ function AuthenticatedPortal() {
                 </div>
                 <StatusBadge status={nextMatch.status} />
               </div>
-              {/* VS layout */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -283,7 +421,6 @@ function AuthenticatedPortal() {
                   </div>
                 </div>
               </div>
-              {/* Submit button */}
               <div style={{ padding: '0 14px 14px' }}>
                 <button
                   onClick={() => setExpandedMatchId(
@@ -332,7 +469,7 @@ function AuthenticatedPortal() {
                 {t('portal.history')}
               </div>
               {sorted
-                .filter(m => m.id !== nextMatch?.id)  // nextMatch has its own card above
+                .filter(m => m.id !== nextMatch?.id)
                 .map((match, idx, arr) => (
                 <MatchRow
                   key={match.id}
@@ -351,7 +488,6 @@ function AuthenticatedPortal() {
             </div>
           )}
 
-          {/* Info box */}
           <div style={{
             background: 'rgba(255,255,255,.7)',
             border: '1px solid #eef2f7',
@@ -398,7 +534,6 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           textAlign: 'left',
         }}
       >
-        {/* Court / finish time */}
         <div style={{ fontSize: 9, color: '#b0b8c8', flexShrink: 0, minWidth: 60 }}>
           {match.court && <div style={{ color: '#11efb5', fontWeight: 600 }}>{match.court}</div>}
           {match.confirmed_at
@@ -409,7 +544,6 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           }
         </div>
 
-        {/* Couple A */}
         <div style={{
           flex: 1,
           textAlign: 'right',
@@ -422,7 +556,6 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           {formatName(match.couple_a?.team_name, 18)}
         </div>
 
-        {/* Score */}
         <div style={{
           background: match.status === 'confirmed' ? 'rgba(17,239,181,.12)' : '#f8fafc',
           borderRadius: 6,
@@ -438,7 +571,6 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           {match.score_a ? match.score_a : t('match.vs')}
         </div>
 
-        {/* Couple B */}
         <div style={{
           flex: 1,
           fontWeight: bWon ? 700 : 400,
@@ -450,13 +582,11 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           {formatName(match.couple_b?.team_name, 18)}
         </div>
 
-        {/* Status badge */}
         <div style={{ flexShrink: 0 }}>
           <StatusBadge status={match.status} />
         </div>
       </button>
 
-      {/* Expanded actions */}
       {expanded && (
         <div style={{
           borderTop: '1px solid #f1f5f9',

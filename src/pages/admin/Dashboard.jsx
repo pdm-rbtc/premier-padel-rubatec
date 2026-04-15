@@ -26,12 +26,22 @@ function DashboardContent() {
   const [devEmail, setDevEmail] = useState('')
   const [devError, setDevError] = useState('')
   const [devLoading, setDevLoading] = useState(false)
-  const [randomizing, setRandomizing] = useState(false)
+  const [randomizing, setRandomizing]       = useState(false)
+  const [randomizeError, setRandomizeError] = useState('')
+  const [randomizeDone, setRandomizeDone]   = useState(false)
 
   async function handleRandomize() {
     setRandomizing(true)
-    await supabase.rpc('randomize_group_results')
+    setRandomizeError('')
+    setRandomizeDone(false)
+    const { error } = await supabase.rpc('randomize_group_results')
     setRandomizing(false)
+    if (error) {
+      setRandomizeError(error.message)
+    } else {
+      setRandomizeDone(true)
+      setStatsKey(k => k + 1)
+    }
   }
 
   const SECTIONS = [
@@ -238,6 +248,12 @@ function DashboardContent() {
           }}>
             {randomizing ? t('admin.dev_randomizing') : t('admin.dev_randomize')}
           </button>
+          {randomizeError && (
+            <p style={{ color: '#ef4444', fontSize: 11, marginTop: 6 }}>{randomizeError}</p>
+          )}
+          {randomizeDone && (
+            <p style={{ color: '#0cb882', fontSize: 11, marginTop: 6 }}>✓ {t('admin.dev_randomize_done')}</p>
+          )}
         </div>
       </div>
 
