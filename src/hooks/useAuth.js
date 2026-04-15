@@ -34,12 +34,19 @@ export function useAuth() {
         if (data) { setProfile(data); return }
 
         // First login — no users row yet. Try to link via couple email.
+        // Requires player_1_email / player_2_email columns on couples table.
+        // SQL to add them: ALTER TABLE couples ADD COLUMN IF NOT EXISTS player_1_email TEXT;
+        //                  ALTER TABLE couples ADD COLUMN IF NOT EXISTS player_2_email TEXT;
         const email = user.email?.toLowerCase()
-        const { data: couple } = await supabase
+        const { data: couple, error: cErr } = await supabase
           .from('couples')
           .select('id')
           .or(`player_1_email.eq.${email},player_2_email.eq.${email}`)
           .maybeSingle()
+        // Silently continue if columns don't exist yet (cErr will be non-null)
+        if (cErr && cErr.message?.includes('column')) {
+          console.warn('player email columns missing from couples — skipping auto-link')
+        }
 
         const newRow = {
           id:           user.id,

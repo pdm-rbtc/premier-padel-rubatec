@@ -6,7 +6,8 @@ import { DUMMY_COUPLES } from '../../lib/dummy.js'
 
 const DIVISIONS   = ['diamant', 'or', 'plata']
 const REQUIRED    = ['player_1_name', 'player_1_surname', 'player_2_name', 'player_2_surname', 'division', 'group_code']
-const CSV_HEADERS = ['player_1_name', 'player_1_surname', 'player_1_email', 'player_2_name', 'player_2_surname', 'player_2_email', 'division', 'group_code', 'seed', 'centre', 'department']
+// CSV uses semicolon delimiter and per-player centre/department columns
+const CSV_HEADERS = ['player_1_name', 'player_1_surname', 'player_1_email', 'player_1_centre', 'player_1_department', 'player_2_name', 'player_2_surname', 'player_2_email', 'player_2_centre', 'player_2_department', 'division', 'group_code', 'seed']
 
 // "J. García / P. López" from separate first name + surname fields
 function autoTeamName(p1First, p1Last, p2First, p2Last) {
@@ -36,21 +37,26 @@ function downloadTemplate(source) {
   const rows = source.map(c => {
     const p1 = splitName(c.player_1_name)
     const p2 = splitName(c.player_2_name)
+    // Stored centre is "Centre1 · Centre2" — split back for template
+    const [c1, c2] = (c.centre ?? '').split(' · ')
+    const [d1, d2] = (c.department ?? '').split(' · ')
     return {
-      player_1_name:    p1.name,
-      player_1_surname: p1.surname,
-      player_1_email:   c.player_1_email ?? '',
-      player_2_name:    p2.name,
-      player_2_surname: p2.surname,
-      player_2_email:   c.player_2_email ?? '',
-      division:         c.division,
-      group_code:       c.group_code,
-      seed:             c.seed ?? '',
-      centre:           c.centre ?? '',
-      department:       c.department ?? '',
+      player_1_name:       p1.name,
+      player_1_surname:    p1.surname,
+      player_1_email:      c.player_1_email ?? '',
+      player_1_centre:     c1 ?? '',
+      player_1_department: d1 ?? '',
+      player_2_name:       p2.name,
+      player_2_surname:    p2.surname,
+      player_2_email:      c.player_2_email ?? '',
+      player_2_centre:     c2 ?? '',
+      player_2_department: d2 ?? '',
+      division:            c.division,
+      group_code:          c.group_code,
+      seed:                c.seed ?? '',
     }
   })
-  const csv = Papa.unparse({ fields: CSV_HEADERS, data: rows })
+  const csv = Papa.unparse({ fields: CSV_HEADERS, data: rows, delimiter: ';' })
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url  = URL.createObjectURL(blob)
   const a    = document.createElement('a')
@@ -96,24 +102,29 @@ function ManageCouplesContent() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: h => h.trim().toLowerCase().replace(/\s+/g, '_'),
+      delimiter: ';',   // CSV uses semicolons
+      transformHeader: h => h.trim().replace(/^\uFEFF/, '').toLowerCase().replace(/\s+/g, '_'),
       complete: ({ data }) => {
         const errors = data.flatMap((row, i) => validateRow(row, i))
         setParseErrors(errors)
         if (!errors.length) {
-          setPreview(data.map(row => ({
-            // Store full name in DB ("Joan García") — no schema change needed
-            player_1_name:  `${row.player_1_name.trim()} ${row.player_1_surname.trim()}`.trim(),
-            player_1_email: row.player_1_email?.trim().toLowerCase() || null,
-            player_2_name:  `${row.player_2_name.trim()} ${row.player_2_surname.trim()}`.trim(),
-            player_2_email: row.player_2_email?.trim().toLowerCase() || null,
-            division:       row.division.toLowerCase().trim(),
-            group_code:     row.group_code.trim().toUpperCase(),
-            seed:           row.seed ? parseInt(row.seed, 10) || null : null,
-            centre:         row.centre?.trim() || null,
-            department:     row.department?.trim() || null,
-            team_name:      autoTeamName(row.player_1_name, row.player_1_surname, row.player_2_name, row.player_2_surname),
-          })))
+          setPreview(data.map(row => {
+            // Combine per-player centre/department into "Centre1 · Centre2" for DB storage
+            const centres = [row.player_1_centre?.trim(), row.player_2_centre?.trim()].filter(Boolean)
+            const depts   = [row.player_1_department?.trim(), row.player_2_department?.trim()].filter(Boolean)
+            return {
+              player_1_name:  `${row.player_1_name.trim()} ${row.player_1_surname.trim()}`.trim(),
+              player_1_email: row.player_1_email?.trim().toLowerCase() || null,
+              player_2_name:  `${row.player_2_name.trim()} ${row.player_2_surname.trim()}`.trim(),
+              player_2_email: row.player_2_email?.trim().toLowerCase() || null,
+              division:       row.division.toLowerCase().trim(),
+              group_code:     row.group_code.trim().toUpperCase(),
+              seed:           row.seed ? parseInt(row.seed, 10) || null : null,
+              centre:         centres.length ? centres.join(' · ') : null,
+              department:     depts.length   ? depts.join(' · ')   : null,
+              team_name:      autoTeamName(row.player_1_name, row.player_1_surname, row.player_2_name, row.player_2_surname),
+            }
+          }))
         } else {
           setPreview(null)
         }
@@ -253,7 +264,7 @@ function ManageCouplesContent() {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 text-text-secondary">
                     <tr>
-                      {['Jugador 1', 'Email 1', 'Jugador 2', 'Email 2', 'División', 'Grupo', 'Pos.', 'Nombre equipo', 'Centre', 'Dpto.'].map(h => (
+                      {['Jugador 1', 'Email 1', 'Jugador 2', 'Email 2', 'División', 'Grupo', 'Pos.', 'Nombre equipo', 'Centres', 'Dptos.'].map(h => (
                         <th key={h} className="text-left px-3 py-2 font-medium">{h}</th>
                       ))}
                     </tr>

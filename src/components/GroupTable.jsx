@@ -76,7 +76,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
           <tbody>
             {standings.map((row, i) => {
               const df   = row.game_differential ?? (row.games_for - row.games_against)
-              const dept = row.couple?.department ?? row.couple?.centre ?? ''
+              const dept = row.couple?.centre ?? row.couple?.department ?? ''
               return (
                 <tr key={row.couple_id} style={{
                   borderBottom: '1px solid #f8fafc',
