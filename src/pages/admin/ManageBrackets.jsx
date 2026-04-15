@@ -223,7 +223,7 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
         <div className="flex-1">
           <div className="font-semibold text-text-primary">{name}</div>
           <div className="text-xs text-text-secondary mt-0.5">
-            {GROUP_CODES[division].length} {t('brackets.groups_summary').split('·')[0].trim()} · {GROUP_CODES[division].length * 4} {t('brackets.groups_summary').split('·')[1].trim()}
+            {GROUP_CODES[division].length} {t('brackets.groups_label')}
           </div>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5 ${statusBadge.cls}`}>

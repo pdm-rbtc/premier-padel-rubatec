@@ -27,7 +27,8 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
     </div>
   )
 
-  const matchesPlayed = standings[0]?.matches_played ?? 0
+  const matchesPlayed  = standings[0]?.matches_played ?? 0
+  const totalGroupMatches = standings.length > 0 ? standings.length - 1 : 3
 
   return (
     <div style={{
@@ -48,7 +49,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
           {t('home.grupo').toUpperCase()} {groupCode}
         </span>
         <span style={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>
-          {matchesPlayed > 0 ? `${matchesPlayed}/3` : '—'}
+          {matchesPlayed > 0 ? `${matchesPlayed}/${totalGroupMatches}` : '—'}
         </span>
       </div>
 

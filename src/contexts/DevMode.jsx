@@ -21,18 +21,19 @@ export function DevModeProvider({ children }) {
   })
 
   async function setDev(email) {
-    const { data: player } = await supabase
-      .from('players')
-      .select('id')
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, couple_id')
       .eq('email', email.toLowerCase().trim())
       .single()
 
-    if (!player) return { error: 'player_not_found' }
+    if (!user) return { error: 'player_not_found' }
+    if (!user.couple_id) return { error: 'couple_not_found' }
 
     const { data: couple } = await supabase
       .from('couples')
       .select('id, team_name, division, group_code')
-      .or(`player_1_id.eq.${player.id},player_2_id.eq.${player.id}`)
+      .eq('id', user.couple_id)
       .single()
 
     if (!couple) return { error: 'couple_not_found' }

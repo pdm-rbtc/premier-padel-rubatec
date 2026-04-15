@@ -123,6 +123,7 @@
     "status_ready": "Listo",
     "status_incomplete": "Grupos incompl.",
     "groups_summary": "grupos · parejas",
+    "groups_label": "grupos",
     "warning_incomplete": "La fase de grupos no está completada. Puedes generar el cuadro de todas formas, pero los emparejamientos reflejarán las clasificaciones actuales.",
     "btn_generate": "Generar cuadro",
     "btn_regenerate": "Ver / regenerar",

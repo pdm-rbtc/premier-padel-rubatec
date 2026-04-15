@@ -6,7 +6,7 @@ import { DUMMY_COUPLES } from '../../lib/dummy.js'
 
 const DIVISIONS   = ['diamant', 'or', 'plata']
 const REQUIRED    = ['player_1_name', 'player_2_name', 'division', 'group_code']
-const CSV_HEADERS = ['player_1_name', 'player_2_name', 'division', 'group_code', 'centre', 'department']
+const CSV_HEADERS = ['player_1_name', 'player_1_email', 'player_2_name', 'player_2_email', 'division', 'group_code', 'centre', 'department']
 
 // Derive "Apellido1 / Apellido2" from two full names
 function autoTeamName(p1, p2) {
@@ -28,12 +28,14 @@ function validateRow(row, index) {
 // ── Template download ─────────────────────────────────────────────────────────
 function downloadTemplate(source) {
   const rows = source.map(c => ({
-    player_1_name: c.player_1_name,
-    player_2_name: c.player_2_name,
-    division:      c.division,
-    group_code:    c.group_code,
-    centre:        c.centre ?? '',
-    department:    c.department ?? '',
+    player_1_name:  c.player_1_name,
+    player_1_email: c.player_1_email ?? '',
+    player_2_name:  c.player_2_name,
+    player_2_email: c.player_2_email ?? '',
+    division:       c.division,
+    group_code:     c.group_code,
+    centre:         c.centre ?? '',
+    department:     c.department ?? '',
   }))
   const csv = Papa.unparse({ fields: CSV_HEADERS, data: rows })
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -87,13 +89,15 @@ function ManageCouplesContent() {
         setParseErrors(errors)
         if (!errors.length) {
           setPreview(data.map(row => ({
-            player_1_name: row.player_1_name.trim(),
-            player_2_name: row.player_2_name.trim(),
-            division:      row.division.toLowerCase().trim(),
-            group_code:    row.group_code.trim().toUpperCase(),
-            centre:        row.centre?.trim() || null,
-            department:    row.department?.trim() || null,
-            team_name:     autoTeamName(row.player_1_name, row.player_2_name),
+            player_1_name:  row.player_1_name.trim(),
+            player_1_email: row.player_1_email?.trim().toLowerCase() || null,
+            player_2_name:  row.player_2_name.trim(),
+            player_2_email: row.player_2_email?.trim().toLowerCase() || null,
+            division:       row.division.toLowerCase().trim(),
+            group_code:     row.group_code.trim().toUpperCase(),
+            centre:         row.centre?.trim() || null,
+            department:     row.department?.trim() || null,
+            team_name:      autoTeamName(row.player_1_name, row.player_2_name),
           })))
         } else {
           setPreview(null)
@@ -155,7 +159,7 @@ function ManageCouplesContent() {
             <h2 className="font-semibold text-text-primary mb-1">Importar parejas desde CSV</h2>
             <p className="text-xs text-text-secondary">
               Descarga la plantilla, rellénala en Excel o Google Sheets y súbela aquí.
-              Las columnas requeridas son: <code className="bg-gray-100 px-1 rounded">player_1_name</code>, <code className="bg-gray-100 px-1 rounded">player_2_name</code>, <code className="bg-gray-100 px-1 rounded">division</code>, <code className="bg-gray-100 px-1 rounded">group_code</code>.
+              Columnas obligatorias: <code className="bg-gray-100 px-1 rounded">player_1_name</code>, <code className="bg-gray-100 px-1 rounded">player_2_name</code>, <code className="bg-gray-100 px-1 rounded">division</code>, <code className="bg-gray-100 px-1 rounded">group_code</code>. Opcionales: <code className="bg-gray-100 px-1 rounded">player_1_email</code>, <code className="bg-gray-100 px-1 rounded">player_2_email</code>, <code className="bg-gray-100 px-1 rounded">centre</code>, <code className="bg-gray-100 px-1 rounded">department</code>.
             </p>
           </div>
 
@@ -187,7 +191,7 @@ function ManageCouplesContent() {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 text-text-secondary">
                     <tr>
-                      {['Jugador 1', 'Jugador 2', 'División', 'Grupo', 'Nombre equipo', 'Centre', 'Dpto.'].map(h => (
+                      {['Jugador 1', 'Email 1', 'Jugador 2', 'Email 2', 'División', 'Grupo', 'Nombre equipo', 'Centre', 'Dpto.'].map(h => (
                         <th key={h} className="text-left px-3 py-2 font-medium">{h}</th>
                       ))}
                     </tr>
@@ -196,7 +200,9 @@ function ManageCouplesContent() {
                     {preview.map((row, i) => (
                       <tr key={i} className="hover:bg-gray-50/50">
                         <td className="px-3 py-2">{row.player_1_name}</td>
+                        <td className="px-3 py-2 text-text-secondary">{row.player_1_email ?? '—'}</td>
                         <td className="px-3 py-2">{row.player_2_name}</td>
+                        <td className="px-3 py-2 text-text-secondary">{row.player_2_email ?? '—'}</td>
                         <td className="px-3 py-2 capitalize">{row.division}</td>
                         <td className="px-3 py-2">{row.group_code}</td>
                         <td className="px-3 py-2 text-text-secondary">{row.team_name}</td>

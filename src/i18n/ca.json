@@ -123,6 +123,7 @@
     "status_ready": "Llest",
     "status_incomplete": "Grups incompl.",
     "groups_summary": "grups · parelles",
+    "groups_label": "grups",
     "warning_incomplete": "La fase de grups no està completada. Pots generar el quadre de totes maneres, però els enfrontaments reflectiran les classificacions actuals.",
     "btn_generate": "Generar quadre",
     "btn_regenerate": "Veure / regenerar",
