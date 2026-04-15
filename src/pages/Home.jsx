@@ -123,7 +123,7 @@ export default function Home() {
             >
               {dc.icon} {dc.label}
               <span style={{ fontSize: 9, opacity: .7, marginLeft: 3 }}>
-                {GROUP_CODES[d].length}g·{GROUP_CODES[d].length * 4}p
+                {GROUP_CODES[d].length}g
               </span>
             </button>
           )

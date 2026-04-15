@@ -109,22 +109,69 @@ function ManageCouplesContent() {
   }
 
   // ── Supabase import ─────────────────────────────────────────────────────────
-  async function handleImport() {
+  async function handleImport({ replace = false } = {}) {
     if (!preview?.length) return
     setImporting(true)
     setImportResult(null)
 
-    const { error } = await supabase.from('couples').insert(preview)
+    try {
+      if (replace) {
+        // Tear-down in FK order: null users.couple_id → delete matches → delete standings → delete couples
+        const { data: existingCouples } = await supabase.from('couples').select('id')
+        const ids = (existingCouples ?? []).map(c => c.id)
+        if (ids.length) {
+          // Null FK on users
+          await supabase.from('users').update({ couple_id: null }).in('couple_id', ids)
+          // Delete group matches (group_standings FK → matches doesn't exist, but matches.couple_a/b_id → couples does)
+          await supabase.from('matches').delete().eq('phase', 'group')
+          // Delete knockout matches too
+          await supabase.from('matches').delete().eq('phase', 'knockout')
+          // Delete standings
+          await supabase.from('group_standings').delete().in('couple_id', ids)
+          // Delete couples in chunks to avoid URL length limits
+          for (let i = 0; i < ids.length; i += 20) {
+            await supabase.from('couples').delete().in('id', ids.slice(i, i + 20))
+          }
+        }
+      }
 
-    setImporting(false)
-    if (error) {
-      setImportResult({ ok: false, message: error.message })
-    } else {
-      setImportResult({ ok: true, message: `${preview.length} parejas importadas correctamente.` })
-      setCouples(prev => [...prev, ...preview])
+      // Insert couples
+      const { data: inserted, error: insertError } = await supabase
+        .from('couples')
+        .insert(preview)
+        .select()
+
+      if (insertError) throw new Error(insertError.message)
+
+      // Create blank group_standings rows for each inserted couple
+      const standingsRows = inserted.map(c => ({
+        couple_id:         c.id,
+        division:          c.division,
+        group_code:        c.group_code,
+        matches_played:    0,
+        matches_won:       0,
+        matches_lost:      0,
+        games_for:         0,
+        games_against:     0,
+        game_differential: 0,
+        points:            0,
+        rank:              c.seed ?? null,
+      }))
+      const { error: standingsError } = await supabase
+        .from('group_standings')
+        .upsert(standingsRows, { onConflict: 'couple_id,division,group_code' })
+
+      if (standingsError) throw new Error(`Parejas importadas, pero error en clasificaciones: ${standingsError.message}`)
+
+      setImportResult({ ok: true, message: `${inserted.length} parejas importadas y clasificaciones inicializadas.` })
+      setCouples(replace ? inserted : prev => [...prev, ...inserted])
       setPreview(null)
       setParseErrors([])
       if (fileRef.current) fileRef.current.value = ''
+    } catch (e) {
+      setImportResult({ ok: false, message: e.message })
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -217,13 +264,22 @@ function ManageCouplesContent() {
                 </table>
               </div>
 
-              <button
-                onClick={handleImport}
-                disabled={importing}
-                className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                {importing ? 'Importando…' : `Confirmar importación (${preview.length} parejas)`}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => handleImport({ replace: false })}
+                  disabled={importing}
+                  className="flex-1 bg-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  {importing ? 'Importando…' : `↑ Añadir (${preview.length} parejas)`}
+                </button>
+                <button
+                  onClick={() => handleImport({ replace: true })}
+                  disabled={importing}
+                  className="flex-1 border-2 border-red-400 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors"
+                >
+                  {importing ? 'Importando…' : `↻ Reemplazar todo (${preview.length} parejas)`}
+                </button>
+              </div>
             </div>
           )}
 

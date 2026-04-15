@@ -1,13 +1,14 @@
 const SLOTS = [
-  { s: 1, t: '9:30'  },
-  { s: 2, t: '10:00' },
-  { s: 3, t: '10:30' },
-  { s: 4, t: '11:00' },
-  { s: 5, t: '11:30' },
-  { s: 6, t: '12:00' },
-  { s: 7, t: '12:30', n: 'QF'    },
-  { s: 8, t: '13:00', n: 'SF'    },
-  { s: 9, t: '13:30', n: 'FINAL' },
+  { s: 1,  t: '9:30'  },
+  { s: 2,  t: '10:00' },
+  { s: 3,  t: '10:30' },
+  { s: 4,  t: '11:00' },
+  { s: 5,  t: '11:30' },
+  { s: 6,  t: '12:00' },
+  { s: 7,  t: '12:30', n: 'QF'    },
+  { s: 8,  t: '13:00', n: 'SF'    },
+  { s: 9,  t: '13:30', n: 'FINAL' },
+  { s: 10, t: '14:00', end: true  },
 ]
 
 function currentSlot() {
@@ -22,7 +23,8 @@ function currentSlot() {
   if (mins < 750) return 6   // 12:00–12:30
   if (mins < 780) return 7   // 12:30–13:00
   if (mins < 810) return 8   // 13:00–13:30
-  return 9                   // after 13:30
+  if (mins < 840) return 9   // 13:30–14:00
+  return 10                  // after 14:00
 }
 
 export default function Timeline() {
@@ -42,16 +44,18 @@ export default function Timeline() {
           const active = s.s === cur
           const done   = s.s < cur
           return (
-            <div key={s.s} style={{ flex: 1, textAlign: 'center' }}>
+            <div key={s.s} style={{ flex: s.end ? 0 : 1, textAlign: 'center' }}>
               <div style={{
                 height: 3,
                 borderRadius: 2,
                 marginBottom: 5,
-                background: done
-                  ? '#11efb5'
-                  : active
-                    ? 'linear-gradient(90deg,#11efb5,#0433FF)'
-                    : '#eef2f7',
+                background: s.end
+                  ? 'transparent'
+                  : done
+                    ? '#11efb5'
+                    : active
+                      ? 'linear-gradient(90deg,#11efb5,#0433FF)'
+                      : '#eef2f7',
               }} />
               <div style={{
                 fontSize: 10,
