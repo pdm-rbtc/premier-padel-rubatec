@@ -6,7 +6,7 @@ import { DUMMY_COUPLES } from '../../lib/dummy.js'
 
 const DIVISIONS   = ['diamant', 'or', 'plata']
 const REQUIRED    = ['player_1_name', 'player_2_name', 'division', 'group_code']
-const CSV_HEADERS = ['player_1_name', 'player_1_email', 'player_2_name', 'player_2_email', 'division', 'group_code', 'centre', 'department']
+const CSV_HEADERS = ['player_1_name', 'player_1_email', 'player_2_name', 'player_2_email', 'division', 'group_code', 'seed', 'centre', 'department']
 
 // Derive "Apellido1 / Apellido2" from two full names
 function autoTeamName(p1, p2) {
@@ -34,6 +34,7 @@ function downloadTemplate(source) {
     player_2_email: c.player_2_email ?? '',
     division:       c.division,
     group_code:     c.group_code,
+    seed:           c.seed ?? '',
     centre:         c.centre ?? '',
     department:     c.department ?? '',
   }))
@@ -95,6 +96,7 @@ function ManageCouplesContent() {
             player_2_email: row.player_2_email?.trim().toLowerCase() || null,
             division:       row.division.toLowerCase().trim(),
             group_code:     row.group_code.trim().toUpperCase(),
+            seed:           row.seed ? parseInt(row.seed, 10) || null : null,
             centre:         row.centre?.trim() || null,
             department:     row.department?.trim() || null,
             team_name:      autoTeamName(row.player_1_name, row.player_2_name),
@@ -191,7 +193,7 @@ function ManageCouplesContent() {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 text-text-secondary">
                     <tr>
-                      {['Jugador 1', 'Email 1', 'Jugador 2', 'Email 2', 'División', 'Grupo', 'Nombre equipo', 'Centre', 'Dpto.'].map(h => (
+                      {['Jugador 1', 'Email 1', 'Jugador 2', 'Email 2', 'División', 'Grupo', 'Pos.', 'Nombre equipo', 'Centre', 'Dpto.'].map(h => (
                         <th key={h} className="text-left px-3 py-2 font-medium">{h}</th>
                       ))}
                     </tr>
@@ -205,6 +207,7 @@ function ManageCouplesContent() {
                         <td className="px-3 py-2 text-text-secondary">{row.player_2_email ?? '—'}</td>
                         <td className="px-3 py-2 capitalize">{row.division}</td>
                         <td className="px-3 py-2">{row.group_code}</td>
+                        <td className="px-3 py-2 text-center text-text-secondary">{row.seed ?? '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">{row.team_name}</td>
                         <td className="px-3 py-2 text-text-secondary">{row.centre ?? '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">{row.department ?? '—'}</td>
