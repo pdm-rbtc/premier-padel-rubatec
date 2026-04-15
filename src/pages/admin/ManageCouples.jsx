@@ -5,13 +5,13 @@ import AdminGuard from '../../components/AdminGuard.jsx'
 import { DUMMY_COUPLES } from '../../lib/dummy.js'
 
 const DIVISIONS   = ['diamant', 'or', 'plata']
-const REQUIRED    = ['player_1_name', 'player_2_name', 'division', 'group_code']
-const CSV_HEADERS = ['player_1_name', 'player_1_email', 'player_2_name', 'player_2_email', 'division', 'group_code', 'seed', 'centre', 'department']
+const REQUIRED    = ['player_1_name', 'player_1_surname', 'player_2_name', 'player_2_surname', 'division', 'group_code']
+const CSV_HEADERS = ['player_1_name', 'player_1_surname', 'player_1_email', 'player_2_name', 'player_2_surname', 'player_2_email', 'division', 'group_code', 'seed', 'centre', 'department']
 
-// Derive "Apellido1 / Apellido2" from two full names
-function autoTeamName(p1, p2) {
-  const surname = name => name.trim().split(' ').slice(1).join(' ') || name.trim()
-  return `${surname(p1)} / ${surname(p2)}`
+// "J. García / P. López" from separate first name + surname fields
+function autoTeamName(p1First, p1Last, p2First, p2Last) {
+  const fmt = (first, last) => `${first.trim()[0].toUpperCase()}. ${last.trim()}`
+  return `${fmt(p1First, p1Last)} / ${fmt(p2First, p2Last)}`
 }
 
 function validateRow(row, index) {
@@ -26,18 +26,30 @@ function validateRow(row, index) {
 }
 
 // ── Template download ─────────────────────────────────────────────────────────
+// Split a stored full name "Joan García" → { name: 'Joan', surname: 'García' }
+function splitName(full = '') {
+  const parts = full.trim().split(' ')
+  return { name: parts[0] ?? '', surname: parts.slice(1).join(' ') || '' }
+}
+
 function downloadTemplate(source) {
-  const rows = source.map(c => ({
-    player_1_name:  c.player_1_name,
-    player_1_email: c.player_1_email ?? '',
-    player_2_name:  c.player_2_name,
-    player_2_email: c.player_2_email ?? '',
-    division:       c.division,
-    group_code:     c.group_code,
-    seed:           c.seed ?? '',
-    centre:         c.centre ?? '',
-    department:     c.department ?? '',
-  }))
+  const rows = source.map(c => {
+    const p1 = splitName(c.player_1_name)
+    const p2 = splitName(c.player_2_name)
+    return {
+      player_1_name:    p1.name,
+      player_1_surname: p1.surname,
+      player_1_email:   c.player_1_email ?? '',
+      player_2_name:    p2.name,
+      player_2_surname: p2.surname,
+      player_2_email:   c.player_2_email ?? '',
+      division:         c.division,
+      group_code:       c.group_code,
+      seed:             c.seed ?? '',
+      centre:           c.centre ?? '',
+      department:       c.department ?? '',
+    }
+  })
   const csv = Papa.unparse({ fields: CSV_HEADERS, data: rows })
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url  = URL.createObjectURL(blob)
@@ -90,16 +102,17 @@ function ManageCouplesContent() {
         setParseErrors(errors)
         if (!errors.length) {
           setPreview(data.map(row => ({
-            player_1_name:  row.player_1_name.trim(),
+            // Store full name in DB ("Joan García") — no schema change needed
+            player_1_name:  `${row.player_1_name.trim()} ${row.player_1_surname.trim()}`.trim(),
             player_1_email: row.player_1_email?.trim().toLowerCase() || null,
-            player_2_name:  row.player_2_name.trim(),
+            player_2_name:  `${row.player_2_name.trim()} ${row.player_2_surname.trim()}`.trim(),
             player_2_email: row.player_2_email?.trim().toLowerCase() || null,
             division:       row.division.toLowerCase().trim(),
             group_code:     row.group_code.trim().toUpperCase(),
             seed:           row.seed ? parseInt(row.seed, 10) || null : null,
             centre:         row.centre?.trim() || null,
             department:     row.department?.trim() || null,
-            team_name:      autoTeamName(row.player_1_name, row.player_2_name),
+            team_name:      autoTeamName(row.player_1_name, row.player_1_surname, row.player_2_name, row.player_2_surname),
           })))
         } else {
           setPreview(null)
@@ -208,7 +221,7 @@ function ManageCouplesContent() {
             <h2 className="font-semibold text-text-primary mb-1">Importar parejas desde CSV</h2>
             <p className="text-xs text-text-secondary">
               Descarga la plantilla, rellénala en Excel o Google Sheets y súbela aquí.
-              Columnas obligatorias: <code className="bg-gray-100 px-1 rounded">player_1_name</code>, <code className="bg-gray-100 px-1 rounded">player_2_name</code>, <code className="bg-gray-100 px-1 rounded">division</code>, <code className="bg-gray-100 px-1 rounded">group_code</code>. Opcionales: <code className="bg-gray-100 px-1 rounded">player_1_email</code>, <code className="bg-gray-100 px-1 rounded">player_2_email</code>, <code className="bg-gray-100 px-1 rounded">centre</code>, <code className="bg-gray-100 px-1 rounded">department</code>.
+              Obligatorias: <code className="bg-gray-100 px-1 rounded">player_1_name</code>, <code className="bg-gray-100 px-1 rounded">player_1_surname</code>, <code className="bg-gray-100 px-1 rounded">player_2_name</code>, <code className="bg-gray-100 px-1 rounded">player_2_surname</code>, <code className="bg-gray-100 px-1 rounded">division</code>, <code className="bg-gray-100 px-1 rounded">group_code</code>. Opcionales: emails, <code className="bg-gray-100 px-1 rounded">centre</code>, <code className="bg-gray-100 px-1 rounded">department</code>.
             </p>
           </div>
 

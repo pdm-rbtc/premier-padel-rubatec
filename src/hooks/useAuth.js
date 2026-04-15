@@ -30,7 +30,32 @@ export function useAuth() {
       .select('couple_id, role, display_name, avatar_url')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => setProfile(data ?? null))
+      .then(async ({ data }) => {
+        if (data) { setProfile(data); return }
+
+        // First login — no users row yet. Try to link via couple email.
+        const email = user.email?.toLowerCase()
+        const { data: couple } = await supabase
+          .from('couples')
+          .select('id')
+          .or(`player_1_email.eq.${email},player_2_email.eq.${email}`)
+          .maybeSingle()
+
+        const newRow = {
+          id:           user.id,
+          email:        user.email,
+          display_name: user.user_metadata?.full_name ?? user.email,
+          avatar_url:   user.user_metadata?.avatar_url ?? null,
+          role:         'player',
+          couple_id:    couple?.id ?? null,
+        }
+        const { data: inserted } = await supabase
+          .from('users')
+          .upsert(newRow, { onConflict: 'id' })
+          .select('couple_id, role, display_name, avatar_url')
+          .single()
+        setProfile(inserted ?? newRow)
+      })
   }, [user?.id])
 
   // Dev mode overrides coupleId for portal testing; real auth (isAdmin) always uses real user
