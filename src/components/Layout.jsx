@@ -1,6 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
-import { signInWithGoogle } from '../lib/auth.js'
 import { useI18n } from '../i18n/index.jsx'
 import LiveTicker from './LiveTicker.jsx'
 import logoTournament from '../assets/logo-tournament.svg'
@@ -73,7 +72,7 @@ export default function Layout() {
                 <Link to="/" style={tabCls(!onPortal && !onAdmin)}>🏆 {t('nav.torneo')}</Link>
                 {user
                   ? <Link to="/portal" style={tabCls(onPortal)}>👤 {t('nav.portal')}</Link>
-                  : <button onClick={signInWithGoogle} style={tabCls(false)}>👤 {t('nav.portal')}</button>
+                  : <Link to="/portal" style={tabCls(false)}>👤 {t('nav.portal')}</Link>
                 }
                 {isAdmin && <Link to="/admin" style={tabCls(onAdmin)}>⚙️ {t('nav.admin')}</Link>}
               </div>

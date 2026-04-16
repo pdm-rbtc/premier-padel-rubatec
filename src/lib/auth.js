@@ -1,13 +1,13 @@
 import { supabase } from './supabase.js'
 
-export async function signInWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
+export async function signInWithEmail(email) {
+  return supabase.auth.signInWithOtp({
+    email,
     options: {
-      redirectTo: `${window.location.origin}/premier-padel-rubatec/`,
+      emailRedirectTo: `${window.location.origin}/premier-padel-rubatec/`,
+      shouldCreateUser: true,
     },
   })
-  if (error) throw error
 }
 
 export async function signOut() {

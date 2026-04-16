@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { useDevMode } from '../contexts/DevMode.jsx'
-import { signInWithGoogle, signOut } from '../lib/auth.js'
+import { signInWithEmail, signOut } from '../lib/auth.js'
 import { useMatches } from '../hooks/useMatches.js'
 import ScoreInput from '../components/ScoreInput.jsx'
 import LiveBadge from '../components/LiveBadge.jsx'
@@ -61,10 +61,29 @@ export default function PlayerPortal() {
   const { user, loading } = useAuth()
   const devMode = useDevMode()
 
+  const [emailInput, setEmailInput]     = useState('')
+  const [emailSent, setEmailSent]       = useState(false)
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailError, setEmailError]     = useState('')
+
   const [showPin, setShowPin]       = useState(false)
   const [pinInput, setPinInput]     = useState('')
   const [pinLoading, setPinLoading] = useState(false)
   const [pinError, setPinError]     = useState('')
+
+  async function handleEmailLogin() {
+    const email = emailInput.trim().toLowerCase()
+    if (!email) return
+    setEmailLoading(true)
+    setEmailError('')
+    const { error } = await signInWithEmail(email)
+    setEmailLoading(false)
+    if (error) {
+      setEmailError(t('portal.login_email_error'))
+    } else {
+      setEmailSent(true)
+    }
+  }
 
   async function handlePinLogin() {
     if (!pinInput.trim()) return
@@ -93,115 +112,161 @@ export default function PlayerPortal() {
             {t('portal.login_subtitle')}
           </p>
 
-          {/* Google login */}
-          <button
-            onClick={signInWithGoogle}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              background: 'white',
-              border: '1px solid #e2e8f0',
-              color: '#0f172a',
-              padding: '12px 20px',
-              borderRadius: 12,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-              boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-            }}
-          >
-            <GoogleIcon />
-            {t('portal.login_google')}
-          </button>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 16px' }}>
-            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('portal.login_or')}</span>
-            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-          </div>
-
-          {/* PIN login toggle */}
-          {!showPin ? (
-            <>
+          {emailSent ? (
+            <div style={{
+              background: 'rgba(17,239,181,.08)',
+              border: '1px solid rgba(17,239,181,.3)',
+              borderRadius: 14,
+              padding: '20px 16px',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>📬</div>
+              <p style={{ fontWeight: 700, color: '#0032a0', fontSize: 14, margin: '0 0 6px' }}>
+                {t('portal.login_email_sent_title')}
+              </p>
+              <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, margin: '0 0 14px' }}>
+                {t('portal.login_email_sent_desc').replace('{email}', emailInput.trim())}
+              </p>
               <button
-                onClick={() => setShowPin(true)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(0,29,114,.04)',
-                  border: '1px solid rgba(0,29,114,.12)',
-                  color: '#0032a0',
-                  padding: '11px 20px',
-                  borderRadius: 12,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
+                onClick={() => { setEmailSent(false); setEmailInput('') }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}
               >
-                🔑 {t('portal.login_pin')}
+                {t('portal.login_email_sent_retry')}
               </button>
-              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 16, lineHeight: 1.5 }}>
-                {t('portal.pin_hint')}
-              </p>
-            </>
+            </div>
           ) : (
-            <div style={{ textAlign: 'left' }}>
-              <p style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
-                {t('portal.pin_desc')}
-              </p>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <>
+              {/* Email login */}
+              <div style={{ textAlign: 'left' }}>
                 <input
-                  type="text"
-                  value={pinInput}
-                  onChange={e => { setPinInput(e.target.value.toUpperCase()); setPinError('') }}
-                  onKeyDown={e => e.key === 'Enter' && handlePinLogin()}
-                  placeholder={t('portal.pin_placeholder')}
-                  maxLength={8}
+                  type="email"
+                  value={emailInput}
+                  onChange={e => { setEmailInput(e.target.value); setEmailError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleEmailLogin()}
+                  placeholder={t('portal.login_email_placeholder')}
                   autoFocus
                   style={{
-                    flex: 1,
-                    border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    letterSpacing: 3,
-                    textAlign: 'center',
+                    width: '100%',
+                    border: emailError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    padding: '12px 14px',
+                    fontSize: 14,
                     outline: 'none',
-                    fontFamily: 'DM Mono, monospace',
-                    color: '#0032a0',
+                    color: '#0f172a',
+                    marginBottom: 10,
+                    boxSizing: 'border-box',
                   }}
                 />
                 <button
-                  onClick={handlePinLogin}
-                  disabled={pinLoading}
+                  onClick={handleEmailLogin}
+                  disabled={emailLoading || !emailInput.trim()}
                   style={{
-                    background: pinLoading ? '#f1f5f9' : '#0032a0',
-                    color: pinLoading ? '#94a3b8' : 'white',
+                    width: '100%',
+                    background: emailLoading || !emailInput.trim() ? '#f1f5f9' : 'linear-gradient(135deg,#0032a0,#0433FF)',
+                    color: emailLoading || !emailInput.trim() ? '#94a3b8' : 'white',
                     border: 'none',
-                    borderRadius: 10,
-                    padding: '10px 18px',
+                    borderRadius: 12,
+                    padding: '12px',
                     fontWeight: 700,
                     fontSize: 14,
-                    cursor: pinLoading ? 'default' : 'pointer',
+                    cursor: emailLoading || !emailInput.trim() ? 'default' : 'pointer',
+                    boxShadow: emailLoading || !emailInput.trim() ? 'none' : '0 4px 14px rgba(0,29,114,.25)',
                   }}
                 >
-                  {pinLoading ? '…' : t('portal.pin_apply')}
+                  {emailLoading ? t('portal.login_email_sending') : t('portal.login_email_button')}
                 </button>
+                {emailError && (
+                  <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{emailError}</p>
+                )}
               </div>
-              {pinError && (
-                <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{pinError}</p>
+
+              {/* Divider */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 16px' }}>
+                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('portal.login_or')}</span>
+                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              </div>
+
+              {/* PIN login toggle */}
+              {!showPin ? (
+                <>
+                  <button
+                    onClick={() => setShowPin(true)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,29,114,.04)',
+                      border: '1px solid rgba(0,29,114,.12)',
+                      color: '#0032a0',
+                      padding: '11px 20px',
+                      borderRadius: 12,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔑 {t('portal.login_pin')}
+                  </button>
+                  <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 16, lineHeight: 1.5 }}>
+                    {t('portal.pin_hint')}
+                  </p>
+                </>
+              ) : (
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
+                    {t('portal.pin_desc')}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      value={pinInput}
+                      onChange={e => { setPinInput(e.target.value.toUpperCase()); setPinError('') }}
+                      onKeyDown={e => e.key === 'Enter' && handlePinLogin()}
+                      placeholder={t('portal.pin_placeholder')}
+                      maxLength={8}
+                      autoFocus
+                      style={{
+                        flex: 1,
+                        border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                        borderRadius: 10,
+                        padding: '10px 12px',
+                        fontSize: 15,
+                        fontWeight: 700,
+                        letterSpacing: 3,
+                        textAlign: 'center',
+                        outline: 'none',
+                        fontFamily: 'DM Mono, monospace',
+                        color: '#0032a0',
+                      }}
+                    />
+                    <button
+                      onClick={handlePinLogin}
+                      disabled={pinLoading}
+                      style={{
+                        background: pinLoading ? '#f1f5f9' : '#0032a0',
+                        color: pinLoading ? '#94a3b8' : 'white',
+                        border: 'none',
+                        borderRadius: 10,
+                        padding: '10px 18px',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        cursor: pinLoading ? 'default' : 'pointer',
+                      }}
+                    >
+                      {pinLoading ? '…' : t('portal.pin_apply')}
+                    </button>
+                  </div>
+                  {pinError && (
+                    <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{pinError}</p>
+                  )}
+                  <button
+                    onClick={() => { setShowPin(false); setPinInput(''); setPinError('') }}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', marginTop: 8 }}
+                  >
+                    {t('portal.pin_cancel')}
+                  </button>
+                </div>
               )}
-              <button
-                onClick={() => { setShowPin(false); setPinInput(''); setPinError('') }}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', marginTop: 8 }}
-              >
-                {t('portal.pin_cancel')}
-              </button>
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -237,15 +302,17 @@ function AuthenticatedPortal() {
 
   const isLoading = authLoading || matchLoading
 
-  // Sort: active first, then by scheduled_at
-  const STATUS_ORDER = { pending_confirmation: 0, disputed: 1, scheduled: 2, confirmed: 3 }
-  const sorted = [...matches].sort((a, b) => {
-    const sd = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9)
-    if (sd !== 0) return sd
-    return new Date(a.scheduled_at) - new Date(b.scheduled_at)
-  })
+  // Sort by time within each status bucket
+  const byTime = [...matches].sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
 
-  const nextMatch = sorted.find(m => m.status === 'scheduled')
+  const nextMatch       = byTime.find(m => m.status === 'scheduled')
+  const upcomingMatches = byTime.filter(m => m.status === 'scheduled' && m.id !== nextMatch?.id)
+
+  // History: only finalized or in-progress matches (not plain scheduled)
+  const STATUS_ORDER = { pending_confirmation: 0, disputed: 1, confirmed: 2 }
+  const historyMatches = byTime
+    .filter(m => m.status !== 'scheduled')
+    .sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9))
 
   const wins   = matches.filter(m => m.winner_id === coupleId).length
   const losses = matches.filter(m => m.status === 'confirmed' && m.winner_id && m.winner_id !== coupleId).length
@@ -481,12 +548,41 @@ function AuthenticatedPortal() {
             </div>
           )}
 
-          {/* Match history */}
-          {matches.length === 0 ? (
+          {matches.length === 0 && (
             <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>
               {t('portal.no_matches')}
             </p>
-          ) : (
+          )}
+
+          {/* Upcoming scheduled matches (after next) */}
+          {upcomingMatches.length > 0 && (
+            <div style={{
+              background: 'white',
+              borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,29,114,.05)',
+            }}>
+              <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#0032a0' }}>
+                {t('portal.upcoming_matches')}
+              </div>
+              {upcomingMatches.map((match, idx, arr) => (
+                <MatchRow
+                  key={match.id}
+                  match={match}
+                  coupleId={coupleId}
+                  expanded={expandedMatchId === match.id}
+                  onToggleExpand={() => setExpandedMatchId(expandedMatchId === match.id ? null : match.id)}
+                  onScoreSubmitted={() => handleScoreSubmitted(match.id)}
+                  onConfirm={() => handleConfirm(match.id)}
+                  onDispute={() => handleDispute(match.id)}
+                  isLast={idx === arr.length - 1}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* History: confirmed / pending / disputed only */}
+          {historyMatches.length > 0 && (
             <div style={{
               background: 'white',
               borderRadius: 14,
@@ -496,17 +592,13 @@ function AuthenticatedPortal() {
               <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#0032a0' }}>
                 {t('portal.history')}
               </div>
-              {sorted
-                .filter(m => m.id !== nextMatch?.id)
-                .map((match, idx, arr) => (
+              {historyMatches.map((match, idx, arr) => (
                 <MatchRow
                   key={match.id}
                   match={match}
                   coupleId={coupleId}
                   expanded={expandedMatchId === match.id}
-                  onToggleExpand={() => setExpandedMatchId(
-                    expandedMatchId === match.id ? null : match.id
-                  )}
+                  onToggleExpand={() => setExpandedMatchId(expandedMatchId === match.id ? null : match.id)}
                   onScoreSubmitted={() => handleScoreSubmitted(match.id)}
                   onConfirm={() => handleConfirm(match.id)}
                   onDispute={() => handleDispute(match.id)}
@@ -692,13 +784,3 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
   )
 }
 
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-    </svg>
-  )
-}
