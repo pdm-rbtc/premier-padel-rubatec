@@ -317,7 +317,10 @@ function ManageCouplesContent() {
       // Re-link registered users to their new couples (fires tr_link_user_to_couple trigger)
       await supabase.rpc('relink_users_to_couples')
 
-      setImportResult({ ok: true, message: `${inserted.length} parejas importadas (${emailToPlayerId.size} jugadores sincronizados) y clasificaciones inicializadas.` })
+      // Seed group-phase matches with courts for all newly created couples
+      await supabase.rpc('seed_group_matches')
+
+      setImportResult({ ok: true, message: `${inserted.length} parejas importadas (${emailToPlayerId.size} jugadores sincronizados), clasificaciones y partidos de grupo generados.` })
       setCouples(replace ? inserted : prev => [...prev, ...inserted])
       setPreview(null)
       setParseErrors([])

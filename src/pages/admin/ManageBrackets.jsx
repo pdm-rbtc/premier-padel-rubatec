@@ -9,18 +9,31 @@ import { useI18n } from '../../i18n/index.jsx'
 
 const GROUP_CODES = {
   diamant: ['G1', 'G2', 'G3'],
-  or:      ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
+  or:      ['G1', 'G2', 'G3', 'G4', 'G5'],
   plata:   ['G1', 'G2', 'G3'],
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Fetch group standings from Supabase; fall back to dummy if empty
+// Fetch group standings from Supabase; fall back to dummy only when NO real data exists
 async function fetchStandings(division) {
-  const groups = GROUP_CODES[division]
-  const standingsByGroup = {}
+  // Discover which groups actually exist in the DB for this division
+  const { data: groupData } = await supabase
+    .from('group_standings')
+    .select('group_code')
+    .eq('division', division)
 
+  const dbGroups = [...new Set((groupData ?? []).map(r => r.group_code))].sort()
+  // Use DB groups if any exist; otherwise fall back to hardcoded defaults + dummy data
+  const groups = dbGroups.length > 0 ? dbGroups : GROUP_CODES[division]
+  const useDummy = dbGroups.length === 0
+
+  const standingsByGroup = {}
   await Promise.all(groups.map(async gc => {
+    if (useDummy) {
+      standingsByGroup[gc] = getDummyStandings(division, gc)
+      return
+    }
     const { data } = await supabase
       .from('group_standings')
       .select('couple_id, points, game_differential, rank, couple:couple_id(team_name)')
@@ -160,7 +173,6 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
     setSaving(true)
     setError(null)
 
-    // Strip fields Supabase doesn't need at insert (id is a PK, keep it for linking)
     const rows = preview.matches.map(m => ({
       id:              m.id,
       division:        m.division,
@@ -172,6 +184,9 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
       status:          m.status,
       next_match_id:   m.next_match_id,
       next_match_slot: m.next_match_slot,
+      court:           m.court,
+      court_label:     m.court_label,
+      time_slot:       m.time_slot,
     }))
 
     const { error: dbError } = await supabase.from('matches').upsert(rows, { onConflict: 'id' })
@@ -352,6 +367,11 @@ function BracketPreview({ matches, coupleMap }) {
                   <span className={`flex-1 truncate text-right ${m.couple_b_id ? 'text-text-primary' : 'text-text-secondary italic'}`}>
                     {m.couple_b_id ? coupleMap[m.couple_b_id]?.team_name ?? t('brackets.unknown') : t('brackets.tbd')}
                   </span>
+                  {m.court && (
+                    <span className="text-xs text-text-secondary bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                      {m.court} · {m.time_slot}
+                    </span>
+                  )}
                   {m.next_match_id && (
                     <span className="text-xs text-accent shrink-0" title="Ganador avanza automáticamente">→</span>
                   )}
