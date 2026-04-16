@@ -121,7 +121,7 @@ export const KNOCKOUT_STRUCTURE = {
           { label: 'A1', side_a: '1º G1', side_b: 'Mejor 2º' },
           { label: 'A2', side_a: '1º G2', side_b: '2º Mejor 2º' },
           { label: 'A3', side_a: '1º G3', side_b: '1º G4' },
-          { label: 'A4', side_a: '1º G5', side_b: '1º G6' },
+          { label: 'A4', side_a: '1º G5', side_b: '3er Mejor 2º' },
         ],
       },
       {
@@ -138,13 +138,11 @@ export const KNOCKOUT_STRUCTURE = {
       },
     ],
     consolation: [
-      { label: 'C1 (2º)', side_a: '3er 2º', side_b: '4º 2º' },
-      { label: 'C2 (2º)', side_a: '5º 2º',  side_b: '6º 2º' },
-      { label: 'C3 (3º)', side_a: '3º G1',  side_b: '3º G2' },
-      { label: 'C4 (3º)', side_a: '3º G3',  side_b: '3º G4' },
-      { label: 'C5 (3º)', side_a: '3º G5',  side_b: '3º G6' },
-      { label: 'C6 (4º)', side_a: 'Mejor 4º', side_b: '2º 4º' },
-      { label: 'C7 (4º)', side_a: '3er 4º', side_b: '4º 4º' },
+      { label: 'C1 (2º)', side_a: '4º Mejor 2º', side_b: '5º Mejor 2º' },
+      { label: 'C2 (3º)', side_a: 'Mejor 3º',    side_b: '2º Mejor 3º' },
+      { label: 'C3 (3º)', side_a: '3er Mejor 3º', side_b: '4º Mejor 3º' },
+      { label: 'C4 (4º)', side_a: 'Mejor 4º',    side_b: '2º Mejor 4º' },
+      { label: 'C5 (4º)', side_a: '3er Mejor 4º', side_b: '4º Mejor 4º' },
     ],
   },
   plata: {

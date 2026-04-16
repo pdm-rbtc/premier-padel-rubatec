@@ -176,7 +176,14 @@ function MatchSlot({ match, isFinal }) {
         ${isFinal ? 'border-accent/50' : 'border-gray-100'}`}
       style={{ width: CARD_W, minHeight: CARD_H }}
     >
-      <div className="text-xs font-semibold text-text-secondary mb-2">{label}</div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-text-secondary">{label}</span>
+        {match.court && (
+          <span className="text-[10px] text-text-secondary bg-gray-100 px-1.5 py-0.5 rounded font-medium">
+            {match.court}
+          </span>
+        )}
+      </div>
       <div className={`flex items-center gap-1.5 py-1 border-b border-gray-100
         ${winnerA ? 'font-bold text-primary' : tbd ? 'text-text-secondary italic' : 'text-text-primary'}`}>
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${winnerA ? 'bg-primary' : 'bg-gray-200'}`} />
@@ -193,6 +200,9 @@ function MatchSlot({ match, isFinal }) {
           <span className="ml-auto font-mono text-xs text-primary shrink-0">{match.score_b}</span>
         )}
       </div>
+      {match.time_slot && (
+        <div className="text-[10px] text-text-secondary mt-1.5 truncate">{match.time_slot}</div>
+      )}
     </div>
   )
 }

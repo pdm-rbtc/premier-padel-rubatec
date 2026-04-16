@@ -7,9 +7,10 @@ import { DIVISION_CONFIG, DIVISIONS } from '../lib/divisions.js'
 import { supabase } from '../lib/supabase.js'
 import { useI18n } from '../i18n/index.jsx'
 
+// Fallback group lists — used for tab counts and when DB has no data yet
 const GROUP_CODES = {
   diamant: ['G1', 'G2', 'G3'],
-  or:      ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'],
+  or:      ['G1', 'G2', 'G3', 'G4', 'G5'],
   plata:   ['G1', 'G2', 'G3'],
 }
 
@@ -58,6 +59,31 @@ export default function Home() {
   const setActiveDiv = (d) => setSearchParams({ div: d }, { replace: true })
 
   const [stats, setStats] = useState(null)
+  // Actual groups to display — dynamically fetched from DB (only complete groups with 4 couples)
+  const [groups, setGroups] = useState(GROUP_CODES[activeDiv] ?? [])
+
+  useEffect(() => {
+    supabase
+      .from('couples')
+      .select('group_code')
+      .eq('division', activeDiv)
+      .not('group_code', 'is', null)
+      .then(({ data }) => {
+        if (!data?.length) {
+          setGroups(GROUP_CODES[activeDiv])
+          return
+        }
+        const counts = {}
+        for (const { group_code } of data) {
+          counts[group_code] = (counts[group_code] ?? 0) + 1
+        }
+        const complete = Object.entries(counts)
+          .filter(([, n]) => n >= 4)
+          .map(([gc]) => gc)
+          .sort()
+        setGroups(complete.length > 0 ? complete : GROUP_CODES[activeDiv])
+      })
+  }, [activeDiv])
 
   useEffect(() => {
     Promise.all([
@@ -77,8 +103,7 @@ export default function Home() {
     })
   }, [])
 
-  const groups = GROUP_CODES[activeDiv]
-  const cfg    = DIVISION_CONFIG[activeDiv]
+  const cfg = DIVISION_CONFIG[activeDiv]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
