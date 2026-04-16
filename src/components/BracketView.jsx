@@ -10,6 +10,19 @@ const ROW_GAP  = 16    // px  gap between sibling cards in same column
 const COL_GAP  = 44    // px  horizontal gap between columns (SVG connectors live here)
 const STEP     = CARD_H + ROW_GAP   // vertical increment in first column
 
+function deduplicateMatches(matches) {
+  const seen = new Map()
+  for (const m of matches) {
+    const key = `${m.round}-${m.position}`
+    const prev = seen.get(key)
+    if (!prev) { seen.set(key, m); continue }
+    const score  = (m.couple_a_id ? 1 : 0) + (m.couple_b_id ? 1 : 0) + (m.winner_id ? 1 : 0)
+    const pScore = (prev.couple_a_id ? 1 : 0) + (prev.couple_b_id ? 1 : 0) + (prev.winner_id ? 1 : 0)
+    if (score > pScore) seen.set(key, m)
+  }
+  return [...seen.values()]
+}
+
 function matchLabel(round, position) {
   if (round === 'quarter')     return `A${position}`
   if (round === 'semi')        return `S${position}`
@@ -270,7 +283,7 @@ export default function BracketView({ division }) {
   }
 
   const { colMap, numCols, feeders, yPos, consolation, colOf, mainMatches, totalH } =
-    buildLayout(matches)
+    buildLayout(deduplicateMatches(matches))
 
   const headings = Array.from({ length: numCols }, (_, c) => {
     const col = colMap[c] ?? []
