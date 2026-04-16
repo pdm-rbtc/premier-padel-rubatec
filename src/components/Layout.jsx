@@ -49,7 +49,7 @@ export default function Layout() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(170deg,#f0f2f8 0%,#e4e9f2 50%,#dfe5f0 100%)' }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(140deg,#001050 0%,#001d72 40%,#0a2a8a 100%)',
+        background: 'linear-gradient(140deg,#001050 0%,#0032a0 40%,#0a2a8a 100%)',
         position: 'relative',
         overflow: 'hidden',
       }}>

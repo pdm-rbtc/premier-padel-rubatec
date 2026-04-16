@@ -60,7 +60,7 @@ export default function Timeline() {
               <div style={{
                 fontSize: 10,
                 fontWeight: active ? 700 : 500,
-                color: active ? '#001d72' : done ? '#0cb882' : '#b0b8c8',
+                color: active ? '#0032a0' : done ? '#0cb882' : '#b0b8c8',
               }}>
                 {s.t}
               </div>

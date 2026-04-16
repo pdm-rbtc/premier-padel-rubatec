@@ -42,7 +42,7 @@ function StatCard({ label, value, icon, color }) {
         {icon}
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 19, fontWeight: 700, color: '#001d72' }}>{value ?? '—'}</div>
+        <div style={{ fontSize: 19, fontWeight: 700, color: '#0032a0' }}>{value ?? '—'}</div>
         <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 1, whiteSpace: 'nowrap' }}>{label}</div>
       </div>
     </div>
@@ -116,7 +116,7 @@ export default function Home() {
                 fontSize: 12,
                 fontWeight: 600,
                 transition: 'all .2s',
-                background: active ? `linear-gradient(135deg,#001d72,${dc.color})` : 'transparent',
+                background: active ? `linear-gradient(135deg,#0032a0,${dc.color})` : 'transparent',
                 color: active ? 'white' : '#94a3b8',
                 boxShadow: active ? '0 2px 8px rgba(0,29,114,.15)' : 'none',
               }}
@@ -148,7 +148,7 @@ export default function Home() {
         padding: 16,
         boxShadow: '0 1px 4px rgba(0,29,114,.05)',
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#001d72', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#0032a0', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 14 }}>🏆</span> {t('home.fase_eliminatoria')}
         </div>
         <BracketView division={activeDiv} />

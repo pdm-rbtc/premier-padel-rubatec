@@ -40,7 +40,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
       {/* Header */}
       <div style={{
         padding: '11px 14px',
-        background: `linear-gradient(135deg,#001d72,${divColor})`,
+        background: `linear-gradient(135deg,#0032a0,${divColor})`,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -145,7 +145,7 @@ export default function GroupTable({ division, groupCode, standings: standingsPr
                   <td style={{
                     textAlign: 'center',
                     fontWeight: 700,
-                    color: '#001d72',
+                    color: '#0032a0',
                     fontSize: 14,
                     padding: '8px 5px',
                   }}>

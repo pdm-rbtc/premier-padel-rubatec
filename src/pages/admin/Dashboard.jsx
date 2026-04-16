@@ -142,10 +142,10 @@ function DashboardContent() {
         borderRadius: 14,
         padding: '16px 20px',
         boxShadow: '0 1px 4px rgba(0,29,114,.05)',
-        borderTop: '3px solid #001d72',
+        borderTop: '3px solid #0032a0',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#001d72' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0032a0' }}>
             🧑‍💻 {t('admin.dev_mode')}
           </div>
           {devMode.active && (
@@ -212,7 +212,7 @@ function DashboardContent() {
               }}
             />
             <button onClick={handleDevApply} disabled={devLoading} style={{
-              background: devLoading ? '#f1f5f9' : '#001d72',
+              background: devLoading ? '#f1f5f9' : '#0032a0',
               color: devLoading ? '#94a3b8' : 'white',
               border: 'none',
               borderRadius: 8,
@@ -265,7 +265,7 @@ function DashboardContent() {
         boxShadow: '0 1px 4px rgba(0,29,114,.05)',
         borderTop: '3px solid #fecaca',
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#001d72', marginBottom: 4 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#0032a0', marginBottom: 4 }}>
           {t('admin.reset_scores')}
         </div>
         <p style={{ fontSize: 11, color: '#64748b', marginBottom: 12 }}>

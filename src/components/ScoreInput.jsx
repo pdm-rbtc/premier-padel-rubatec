@@ -79,7 +79,7 @@ export default function ScoreInput({ match, onSuccess }) {
               fontSize: 28, fontWeight: 700,
               border: '2px solid #e2e8f0', borderRadius: 12,
               outline: 'none', fontFamily: 'DM Mono, monospace',
-              color: '#001d72',
+              color: '#0032a0',
             }}
           />
         </div>
@@ -101,7 +101,7 @@ export default function ScoreInput({ match, onSuccess }) {
               fontSize: 28, fontWeight: 700,
               border: '2px solid #e2e8f0', borderRadius: 12,
               outline: 'none', fontFamily: 'DM Mono, monospace',
-              color: '#001d72',
+              color: '#0032a0',
             }}
           />
         </div>
@@ -110,7 +110,7 @@ export default function ScoreInput({ match, onSuccess }) {
       {error && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 10 }}>{error}</p>}
 
       <button type="submit" disabled={submitting} style={{
-        width: '100%', background: '#001d72', color: 'white',
+        width: '100%', background: '#0032a0', color: 'white',
         border: 'none', borderRadius: 12, padding: '14px 0',
         fontSize: 15, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
         opacity: submitting ? 0.6 : 1,

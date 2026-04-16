@@ -9,6 +9,26 @@ import LiveBadge from '../components/LiveBadge.jsx'
 import { formatName } from '../lib/utils.js'
 import { useI18n } from '../i18n/index.jsx'
 
+// ── Round label helper ────────────────────────────────────────────────────────
+const KNOCKOUT_LABELS = {
+  quarter:     'Cuartos de final',
+  semi:        'Semifinal',
+  final:       'Final',
+  third_place: '3er/4o Puesto',
+  consolation: 'Consolación',
+}
+
+function matchRoundLabel(match) {
+  if (!match) return ''
+  if (match.phase === 'group') {
+    const parts = ['Grupos']
+    if (match.group_code) parts.push(match.group_code)
+    if (match.round)      parts.push(match.round)
+    return parts.join(' · ')
+  }
+  return KNOCKOUT_LABELS[match.round] ?? 'Eliminatoria'
+}
+
 // ── Status badge config ───────────────────────────────────────────────────────
 const STATUS_STYLE = {
   confirmed:            { bg: 'rgba(17,239,181,.12)',  color: '#0cb882', icon: '✓' },
@@ -68,7 +88,7 @@ export default function PlayerPortal() {
           boxShadow: '0 4px 24px rgba(0,29,114,.08)',
         }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎾</div>
-          <h1 style={{ color: '#001d72', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>{t('portal.login_title')}</h1>
+          <h1 style={{ color: '#0032a0', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>{t('portal.login_title')}</h1>
           <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.5, margin: '0 0 28px' }}>
             {t('portal.login_subtitle')}
           </p>
@@ -113,7 +133,7 @@ export default function PlayerPortal() {
                   width: '100%',
                   background: 'rgba(0,29,114,.04)',
                   border: '1px solid rgba(0,29,114,.12)',
-                  color: '#001d72',
+                  color: '#0032a0',
                   padding: '11px 20px',
                   borderRadius: 12,
                   fontWeight: 600,
@@ -152,14 +172,14 @@ export default function PlayerPortal() {
                     textAlign: 'center',
                     outline: 'none',
                     fontFamily: 'DM Mono, monospace',
-                    color: '#001d72',
+                    color: '#0032a0',
                   }}
                 />
                 <button
                   onClick={handlePinLogin}
                   disabled={pinLoading}
                   style={{
-                    background: pinLoading ? '#f1f5f9' : '#001d72',
+                    background: pinLoading ? '#f1f5f9' : '#0032a0',
                     color: pinLoading ? '#94a3b8' : 'white',
                     border: 'none',
                     borderRadius: 10,
@@ -300,7 +320,7 @@ function AuthenticatedPortal() {
               width: 28, height: 28, borderRadius: '50%',
               background: isPinSession ? 'rgba(4,51,255,.08)' : 'rgba(0,29,114,.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: isPinSession ? '#0433FF' : '#001d72', fontWeight: 700, fontSize: 12,
+              color: isPinSession ? '#0433FF' : '#0032a0', fontWeight: 700, fontSize: 12,
             }}>
               {isPinSession ? '🔑' : displayName?.[0]?.toUpperCase()}
             </div>
@@ -342,7 +362,7 @@ function AuthenticatedPortal() {
         <>
           {/* MI PAREJA gradient card */}
           <div style={{
-            background: 'linear-gradient(135deg,#001d72,#0433FF)',
+            background: 'linear-gradient(135deg,#0032a0,#0433FF)',
             borderRadius: 16,
             padding: '18px 20px',
             position: 'relative',
@@ -384,10 +404,13 @@ function AuthenticatedPortal() {
                 </div>
               </div>
               <div style={{ padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ fontSize: 11, color: '#64748b' }}>
-                  {nextMatch.court && <span style={{ color: '#11efb5', fontWeight: 600 }}>{nextMatch.court}</span>}
-                  {nextMatch.court && nextMatch.time_slot && ' · '}
-                  {nextMatch.time_slot && <span>{nextMatch.time_slot}</span>}
+                <div style={{ fontSize: 11, color: '#64748b', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ color: '#94a3b8', fontSize: 10, fontWeight: 600 }}>{matchRoundLabel(nextMatch)}</span>
+                  <div>
+                    {nextMatch.court && <span style={{ color: '#11efb5', fontWeight: 600 }}>{nextMatch.court}</span>}
+                    {nextMatch.court && nextMatch.time_slot && ' · '}
+                    {nextMatch.time_slot && <span>{nextMatch.time_slot}</span>}
+                  </div>
                 </div>
                 <StatusBadge status={nextMatch.status} />
               </div>
@@ -434,7 +457,7 @@ function AuthenticatedPortal() {
                   style={{
                     width: '100%',
                     background: 'linear-gradient(135deg,#11efb5,#0cb882)',
-                    color: '#001d72',
+                    color: '#0032a0',
                     fontWeight: 700,
                     fontSize: 13,
                     borderRadius: 12,
@@ -470,7 +493,7 @@ function AuthenticatedPortal() {
               overflow: 'hidden',
               boxShadow: '0 1px 4px rgba(0,29,114,.05)',
             }}>
-              <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#001d72' }}>
+              <div style={{ padding: '12px 14px 8px', fontSize: 12, fontWeight: 700, color: '#0032a0' }}>
                 {t('portal.history')}
               </div>
               {sorted
@@ -539,7 +562,8 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           textAlign: 'left',
         }}
       >
-        <div style={{ fontSize: 9, color: '#b0b8c8', flexShrink: 0, minWidth: 60 }}>
+        <div style={{ fontSize: 9, color: '#b0b8c8', flexShrink: 0, minWidth: 68 }}>
+          <div style={{ color: '#94a3b8', fontSize: 9, fontWeight: 600, marginBottom: 1 }}>{matchRoundLabel(match)}</div>
           {match.court && <div style={{ color: '#11efb5', fontWeight: 600 }}>{match.court}</div>}
           {match.confirmed_at
             ? <div style={{ color: '#0cb882' }}>
@@ -553,7 +577,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           flex: 1,
           textAlign: 'right',
           fontWeight: aWon ? 700 : 400,
-          color: aWon ? '#001d72' : '#94a3b8',
+          color: aWon ? '#0032a0' : '#94a3b8',
           fontSize: 11,
           lineHeight: 1.3,
         }}>
@@ -579,7 +603,7 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
         <div style={{
           flex: 1,
           fontWeight: bWon ? 700 : 400,
-          color: bWon ? '#001d72' : '#94a3b8',
+          color: bWon ? '#0032a0' : '#94a3b8',
           fontSize: 11,
           lineHeight: 1.3,
         }}>
@@ -605,20 +629,20 @@ function MatchRow({ match, coupleId, expanded, onToggleExpand, onScoreSubmitted,
           {canConfirm && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 4px' }}>
-                <span style={{ fontWeight: 600, color: '#001d72' }}>
+                <span style={{ fontWeight: 600, color: '#0032a0' }}>
                   {match.couple_a_id === match.submitted_by
                     ? match.couple_a?.team_name
                     : match.couple_b?.team_name}
                 </span>{' '}
                 {t('portal.opponent_submitted')}:
-                <span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#001d72', marginLeft: 6 }}>
+                <span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#0032a0', marginLeft: 6 }}>
                   {match.score_a}
                 </span>
               </p>
               <button onClick={onConfirm} style={{
                 width: '100%',
                 background: 'linear-gradient(135deg,#11efb5,#0cb882)',
-                color: '#001d72',
+                color: '#0032a0',
                 fontWeight: 700,
                 fontSize: 13,
                 borderRadius: 12,

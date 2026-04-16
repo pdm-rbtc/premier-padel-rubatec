@@ -52,7 +52,7 @@ export default function LiveTicker() {
   if (items.length === 0) {
     return (
       <div style={{
-        background: 'linear-gradient(90deg,#001d72,#0433FF)',
+        background: 'linear-gradient(90deg,#0032a0,#0433FF)',
         padding: '8px 16px',
         display: 'flex',
         alignItems: 'center',
@@ -70,7 +70,7 @@ export default function LiveTicker() {
 
   return (
     <div style={{
-      background: 'linear-gradient(90deg,#001d72,#0433FF)',
+      background: 'linear-gradient(90deg,#0032a0,#0433FF)',
       padding: '8px 0',
       overflow: 'hidden',
       position: 'relative',
@@ -115,20 +115,10 @@ export default function LiveTicker() {
               {m.teamA}
             </span>
 
-            {/* Score A */}
+            {/* Score */}
             {m.scoreA && (
               <span style={{ color: m.aWon ? '#11efb5' : 'rgba(255,255,255,.35)', fontWeight: 700, fontSize: 12 }}>
                 {m.scoreA}
-              </span>
-            )}
-
-            {/* Separator */}
-            <span style={{ color: 'rgba(255,255,255,.25)', fontSize: 10 }}>—</span>
-
-            {/* Score B */}
-            {m.scoreB && (
-              <span style={{ color: m.bWon ? '#11efb5' : 'rgba(255,255,255,.35)', fontWeight: 700, fontSize: 12 }}>
-                {m.scoreB}
               </span>
             )}
 

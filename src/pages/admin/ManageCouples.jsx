@@ -98,6 +98,7 @@ function ManageCouplesContent() {
   const [pinError, setPinError]           = useState('')
   const [copiedId, setCopiedId]           = useState(null)
   const [bulkGenerating, setBulkGenerating] = useState(false)
+  const [resettingPins, setResettingPins]   = useState(false)
 
   async function savePin(coupleId) {
     const value = pinDraft.toUpperCase().trim()
@@ -139,6 +140,15 @@ function ManageCouplesContent() {
     }
     setBulkGenerating(false)
   }
+
+  async function resetAllPins() {
+    if (!window.confirm('¿Resetear todos los PINs? Los jugadores no podrán entrar hasta que se les asigne un nuevo PIN.')) return
+    setResettingPins(true)
+    const { error } = await supabase.from('couples').update({ login_pin: null }).neq('id', '00000000-0000-0000-0000-000000000000')
+    setResettingPins(false)
+    if (!error) setCouples(prev => prev.map(c => ({ ...c, login_pin: null })))
+  }
+
   const fileRef = useRef()
 
   useEffect(() => {
@@ -263,8 +273,9 @@ function ManageCouplesContent() {
         <h1 className="text-2xl font-bold text-primary">Parejas</h1>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => downloadTemplate(couples.length ? couples : DUMMY_COUPLES)}
-            className="text-sm border border-gray-200 text-text-secondary px-3 py-1.5 rounded-lg hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
+            onClick={() => { if (!loading && couples.length) downloadTemplate(couples) }}
+            disabled={loading || !couples.length}
+            className="text-sm border border-gray-200 text-text-secondary px-3 py-1.5 rounded-lg hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             ↓ Plantilla CSV
           </button>
@@ -389,21 +400,38 @@ function ManageCouplesContent() {
                 Da cada PIN al jugador correspondiente para que pueda acceder al portal.
               </p>
             </div>
-            <button
-              onClick={bulkGeneratePins}
-              disabled={bulkGenerating || couples.every(c => c.login_pin)}
-              style={{
-                background: bulkGenerating ? '#f1f5f9' : 'rgba(4,51,255,.07)',
-                color: bulkGenerating ? '#94a3b8' : '#0433FF',
-                border: '1px solid',
-                borderColor: bulkGenerating ? '#e2e8f0' : 'rgba(4,51,255,.2)',
-                borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600,
-                cursor: bulkGenerating || couples.every(c => c.login_pin) ? 'default' : 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {bulkGenerating ? 'Generando…' : '✦ Generar PINs faltantes'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={bulkGeneratePins}
+                disabled={bulkGenerating || couples.every(c => c.login_pin)}
+                style={{
+                  background: bulkGenerating ? '#f1f5f9' : 'rgba(4,51,255,.07)',
+                  color: bulkGenerating ? '#94a3b8' : '#0433FF',
+                  border: '1px solid',
+                  borderColor: bulkGenerating ? '#e2e8f0' : 'rgba(4,51,255,.2)',
+                  borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600,
+                  cursor: bulkGenerating || couples.every(c => c.login_pin) ? 'default' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {bulkGenerating ? 'Generando…' : '✦ Generar PINs faltantes'}
+              </button>
+              <button
+                onClick={resetAllPins}
+                disabled={resettingPins || couples.every(c => !c.login_pin)}
+                style={{
+                  background: resettingPins ? '#f1f5f9' : 'rgba(239,68,68,.07)',
+                  color: resettingPins ? '#94a3b8' : '#ef4444',
+                  border: '1px solid',
+                  borderColor: resettingPins ? '#e2e8f0' : 'rgba(239,68,68,.2)',
+                  borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600,
+                  cursor: resettingPins || couples.every(c => !c.login_pin) ? 'default' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {resettingPins ? 'Reseteando…' : '↺ Resetear todos'}
+              </button>
+            </div>
           </div>
 
           {DIVISIONS.map(div => {
@@ -466,7 +494,7 @@ function ManageCouplesContent() {
                                         width: 80, border: '1px solid #e2e8f0',
                                         borderRadius: 5, padding: '3px 7px', fontSize: 11,
                                         fontWeight: 700, letterSpacing: 2, fontFamily: 'DM Mono, monospace',
-                                        outline: 'none', color: '#001d72',
+                                        outline: 'none', color: '#0032a0',
                                       }}
                                     />
                                     <button onClick={() => { setPinDraft(generatePin()); setPinError('') }}
@@ -474,7 +502,7 @@ function ManageCouplesContent() {
                                       ↺
                                     </button>
                                     <button onClick={() => savePin(c.id)} disabled={pinSaving}
-                                      style={{ fontSize: 10, padding: '3px 8px', border: 'none', borderRadius: 4, cursor: 'pointer', background: '#001d72', color: 'white', fontWeight: 600 }}>
+                                      style={{ fontSize: 10, padding: '3px 8px', border: 'none', borderRadius: 4, cursor: 'pointer', background: '#0032a0', color: 'white', fontWeight: 600 }}>
                                       {pinSaving ? '…' : '✓'}
                                     </button>
                                     <button onClick={() => { setEditingPinId(null); setPinDraft(''); setPinError('') }}
@@ -568,7 +596,7 @@ function ManageCouplesContent() {
                                   style={{
                                     flex: 1, border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
                                     borderRadius: 6, padding: '3px 7px', fontSize: 11, fontWeight: 700,
-                                    letterSpacing: 2, fontFamily: 'DM Mono, monospace', outline: 'none', color: '#001d72',
+                                    letterSpacing: 2, fontFamily: 'DM Mono, monospace', outline: 'none', color: '#0032a0',
                                   }}
                                 />
                                 <button onClick={() => { setPinDraft(generatePin()); setPinError('') }}
@@ -576,7 +604,7 @@ function ManageCouplesContent() {
                                   ↺ Generar
                                 </button>
                                 <button onClick={() => savePin(c.id)} disabled={pinSaving}
-                                  style={{ fontSize: 10, padding: '3px 8px', border: 'none', borderRadius: 5, cursor: 'pointer', background: '#001d72', color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                  style={{ fontSize: 10, padding: '3px 8px', border: 'none', borderRadius: 5, cursor: 'pointer', background: '#0032a0', color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                   {pinSaving ? '…' : 'Guardar'}
                                 </button>
                                 <button onClick={() => { setEditingPinId(null); setPinDraft(''); setPinError('') }}
