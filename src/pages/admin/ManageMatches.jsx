@@ -15,6 +15,16 @@ const HORA_MAP  = {
   '13':    '13:00h - 13:30h',
   '13.30': '13:30h - 14:00h',
 }
+// Maps the sorted seed pair (e.g. "1-2") to DB round/position,
+// which is fixed by how seed_group_matches() creates matches.
+const PAIR_TO_ROUND = {
+  '1-2': { round: 'R1', position: 1 },
+  '3-4': { round: 'R1', position: 2 },
+  '1-3': { round: 'R2', position: 1 },
+  '2-4': { round: 'R2', position: 2 },
+  '1-4': { round: 'R3', position: 1 },
+  '2-3': { round: 'R3', position: 2 },
+}
 
 function parseCourtCSV(text) {
   const rows = []
@@ -34,11 +44,16 @@ function parseCourtCSV(text) {
     if (!time_slot) { errors.push(`Línea ${i + 2}: hora desconocida "${horaRaw}"`); continue }
     const court = parseInt(pistaRaw)
     if (isNaN(court) || court < 1 || court > 12) { errors.push(`Línea ${i + 2}: pista inválida "${pistaRaw}"`); continue }
+    const sa = parseInt(m[2]), sb = parseInt(m[3])
+    const pairKey = `${Math.min(sa, sb)}-${Math.max(sa, sb)}`
+    const rp = PAIR_TO_ROUND[pairKey]
+    if (!rp) { errors.push(`Línea ${i + 2}: combinación de seeds desconocida "${pairKey}"`); continue }
     rows.push({
       division,
       group_code: m[1],
-      seed_a: parseInt(m[2]),
-      seed_b: parseInt(m[3]),
+      round: rp.round,
+      position: rp.position,
+      label: `${m[1]} ${sa}v${sb}`,
       time_slot,
       court: `Pista ${court}`,
       court_label: String.fromCharCode(64 + court),
@@ -71,28 +86,23 @@ function CourtImportPanel({ onClose }) {
 
   async function handlePreview() {
     if (!parsed?.length) return
-    const { data: couples } = await supabase
-      .from('couples').select('id, division, group_code, seed')
     const { data: matches } = await supabase
-      .from('matches').select('id, division, group_code, couple_a_id, couple_b_id')
+      .from('matches').select('id, division, group_code, round, position')
       .eq('phase', 'group')
 
-    const coupleMap = {}
-    for (const c of (couples ?? [])) coupleMap[`${c.division}-${c.group_code}-${c.seed}`] = c.id
+    const matchMap = {}
+    for (const m of (matches ?? [])) {
+      matchMap[`${m.division}-${m.group_code}-${m.round}-${m.position}`] = m.id
+    }
 
     const resolved = []
     const unresolved = []
     for (const row of parsed) {
-      const idA = coupleMap[`${row.division}-${row.group_code}-${row.seed_a}`]
-      const idB = coupleMap[`${row.division}-${row.group_code}-${row.seed_b}`]
-      if (!idA || !idB) { unresolved.push(`${row.division} ${row.group_code} ${row.seed_a}v${row.seed_b}: pareja no encontrada`); continue }
-      const match = (matches ?? []).find(m =>
-        (m.couple_a_id === idA && m.couple_b_id === idB) ||
-        (m.couple_a_id === idB && m.couple_b_id === idA)
-      )
-      if (!match) { unresolved.push(`${row.division} ${row.group_code} ${row.seed_a}v${row.seed_b}: partido no encontrado`); continue }
-      resolved.push({ matchId: match.id, court: row.court, court_label: row.court_label, time_slot: row.time_slot,
-        label: `${row.division.toUpperCase()} ${row.group_code} ${row.seed_a}v${row.seed_b}` })
+      const key = `${row.division}-${row.group_code}-${row.round}-${row.position}`
+      const matchId = matchMap[key]
+      if (!matchId) { unresolved.push(`${row.division} ${row.group_code} ${row.label}: partido no encontrado`); continue }
+      resolved.push({ matchId, court: row.court, court_label: row.court_label, time_slot: row.time_slot,
+        label: `${row.division.toUpperCase()} ${row.group_code} ${row.label}` })
     }
     setErrors(prev => [...prev, ...unresolved])
     setPreview(resolved)
