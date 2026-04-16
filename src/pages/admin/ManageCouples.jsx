@@ -205,15 +205,21 @@ function ManageCouplesContent() {
 
     try {
       if (replace) {
-        // Tear-down in FK order: null users.couple_id → delete matches → delete standings → delete couples
+        // Tear-down in FK order:
+        //   match_log → matches (FK, must go first)
+        //   users.couple_id → null
+        //   matches (group + knockout)
+        //   group_standings
+        //   couples
         const { data: existingCouples } = await supabase.from('couples').select('id')
         const ids = (existingCouples ?? []).map(c => c.id)
         if (ids.length) {
+          // Clear match_log first (FK match_log.match_id → matches with no CASCADE)
+          await supabase.from('match_log').delete().not('id', 'is', null)
           // Null FK on users
           await supabase.from('users').update({ couple_id: null }).in('couple_id', ids)
-          // Delete group matches (group_standings FK → matches doesn't exist, but matches.couple_a/b_id → couples does)
+          // Delete all matches
           await supabase.from('matches').delete().eq('phase', 'group')
-          // Delete knockout matches too
           await supabase.from('matches').delete().eq('phase', 'knockout')
           // Delete standings
           await supabase.from('group_standings').delete().in('couple_id', ids)
@@ -251,6 +257,9 @@ function ManageCouplesContent() {
         .upsert(standingsRows, { onConflict: 'couple_id,division,group_code' })
 
       if (standingsError) throw new Error(`Parejas importadas, pero error en clasificaciones: ${standingsError.message}`)
+
+      // Re-link registered users to their new couples (fires tr_link_user_to_couple trigger)
+      await supabase.rpc('relink_users_to_couples')
 
       setImportResult({ ok: true, message: `${inserted.length} parejas importadas y clasificaciones inicializadas.` })
       setCouples(replace ? inserted : prev => [...prev, ...inserted])

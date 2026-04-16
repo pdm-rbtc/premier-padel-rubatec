@@ -21,25 +21,40 @@ export function DevModeProvider({ children }) {
   })
 
   // Email-based impersonation (admin dev tool)
+  // Works for @rubatec.cat users (have a users row) AND external players (matched via couple emails)
   async function setDev(email) {
+    const normalizedEmail = email.toLowerCase().trim()
+    let couple = null
+
+    // Path A: user has logged in → check users table for couple_id
     const { data: user } = await supabase
       .from('users')
       .select('id, couple_id')
-      .eq('email', email.toLowerCase().trim())
-      .single()
+      .eq('email', normalizedEmail)
+      .maybeSingle()
 
-    if (!user) return { error: 'player_not_found' }
-    if (!user.couple_id) return { error: 'couple_not_found' }
+    if (user?.couple_id) {
+      const { data: c } = await supabase
+        .from('couples')
+        .select('id, team_name, division, group_code')
+        .eq('id', user.couple_id)
+        .maybeSingle()
+      couple = c ?? null
+    }
 
-    const { data: couple } = await supabase
-      .from('couples')
-      .select('id, team_name, division, group_code')
-      .eq('id', user.couple_id)
-      .single()
+    // Path B: no users row (external player) → look up via couple email columns
+    if (!couple) {
+      const { data: c } = await supabase
+        .from('couples')
+        .select('id, team_name, division, group_code')
+        .or(`player_1_email.eq.${normalizedEmail},player_2_email.eq.${normalizedEmail}`)
+        .maybeSingle()
+      couple = c ?? null
+    }
 
     if (!couple) return { error: 'couple_not_found' }
 
-    const next = { active: true, email: email.toLowerCase().trim(), coupleId: couple.id, coupleInfo: couple, pinSession: false, pin: '' }
+    const next = { active: true, email: normalizedEmail, coupleId: couple.id, coupleInfo: couple, pinSession: false, pin: '' }
     localStorage.setItem('devMode', JSON.stringify(next))
     setState(next)
     return {}
