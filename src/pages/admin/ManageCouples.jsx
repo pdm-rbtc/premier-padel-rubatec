@@ -435,14 +435,20 @@ function ManageCouplesContent() {
                               <td className="px-4 py-2.5 font-medium text-primary">{g}</td>
                               <td className="px-4 py-2.5 font-semibold text-text-primary">{c.team_name}</td>
                               <td className="px-4 py-2.5 text-text-secondary">
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                  <span style={{ color: c.player_1_email ? '#64748b' : '#ef4444' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                  <span>
                                     {c.player_1_name}
-                                    {c.player_1_email ? '' : ' · sin email'}
+                                    {c.player_1_email
+                                      ? <span style={{ color: '#94a3b8', fontSize: 10, marginLeft: 4 }}>{c.player_1_email}</span>
+                                      : <span style={{ color: '#ef4444', fontSize: 10, marginLeft: 4 }}>sin email</span>
+                                    }
                                   </span>
-                                  <span style={{ color: c.player_2_email ? '#64748b' : '#ef4444' }}>
+                                  <span>
                                     {c.player_2_name}
-                                    {c.player_2_email ? '' : ' · sin email'}
+                                    {c.player_2_email
+                                      ? <span style={{ color: '#94a3b8', fontSize: 10, marginLeft: 4 }}>{c.player_2_email}</span>
+                                      : <span style={{ color: '#ef4444', fontSize: 10, marginLeft: 4 }}>sin email</span>
+                                    }
                                   </span>
                                 </div>
                               </td>

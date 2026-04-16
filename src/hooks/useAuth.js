@@ -34,19 +34,35 @@ export function useAuth() {
         // If we already have a couple linked, we're done
         if (data?.couple_id) { setProfile(data); return }
 
-        // Row exists but couple_id is null, OR first login — try to auto-link via email
+        // Row exists but couple_id is null, OR first login — try to auto-link via email.
+        // Path A: players table → FK on couples
+        // Path B: player_1_email / player_2_email directly on couples (CSV-imported)
         const email = user.email?.toLowerCase()
-        const { data: couple, error: cErr } = await supabase
-          .from('couples')
+        let coupleId = null
+
+        const { data: player } = await supabase
+          .from('players')
           .select('id')
-          .or(`player_1_email.eq.${email},player_2_email.eq.${email}`)
+          .eq('email', email)
           .maybeSingle()
-        // Silently continue if columns don't exist yet
-        if (cErr && cErr.message?.includes('column')) {
-          console.warn('player email columns missing from couples — skipping auto-link')
+
+        if (player?.id) {
+          const { data: c } = await supabase
+            .from('couples')
+            .select('id')
+            .or(`player_1_id.eq.${player.id},player_2_id.eq.${player.id}`)
+            .maybeSingle()
+          coupleId = c?.id ?? null
         }
 
-        const coupleId = couple?.id ?? null
+        if (!coupleId) {
+          const { data: c } = await supabase
+            .from('couples')
+            .select('id')
+            .or(`player_1_email.eq.${email},player_2_email.eq.${email}`)
+            .maybeSingle()
+          coupleId = c?.id ?? null
+        }
 
         if (data) {
           // Row exists but couple_id was null — update it if we found a link
