@@ -83,7 +83,7 @@ function generatePin(len = 6) {
 function ManageCouplesContent() {
   const [couples, setCouples]       = useState([])
   const [loading, setLoading]       = useState(true)
-  const [activeTab, setActiveTab]   = useState('list')  // 'list' | 'import'
+  const [activeTab, setActiveTab]   = useState('list')  // 'list' | 'import' | 'pins'
 
   // Import state
   const [preview, setPreview]       = useState(null)   // parsed rows
@@ -92,11 +92,12 @@ function ManageCouplesContent() {
   const [importResult, setImportResult] = useState(null)
 
   // PIN editing state
-  const [editingPinId, setEditingPinId] = useState(null)
-  const [pinDraft, setPinDraft]         = useState('')
-  const [pinSaving, setPinSaving]       = useState(false)
-  const [pinError, setPinError]         = useState('')
-  const [copiedId, setCopiedId]         = useState(null)
+  const [editingPinId, setEditingPinId]   = useState(null)
+  const [pinDraft, setPinDraft]           = useState('')
+  const [pinSaving, setPinSaving]         = useState(false)
+  const [pinError, setPinError]           = useState('')
+  const [copiedId, setCopiedId]           = useState(null)
+  const [bulkGenerating, setBulkGenerating] = useState(false)
 
   async function savePin(coupleId) {
     const value = pinDraft.toUpperCase().trim()
@@ -119,6 +120,24 @@ function ManageCouplesContent() {
       setCopiedId(id)
       setTimeout(() => setCopiedId(null), 1500)
     })
+  }
+
+  async function bulkGeneratePins() {
+    setBulkGenerating(true)
+    const missing = couples.filter(c => !c.login_pin)
+    for (const c of missing) {
+      let pin, taken = true
+      // Generate a unique PIN (retry on collision)
+      while (taken) {
+        pin = generatePin()
+        taken = couples.some(x => x.login_pin === pin)
+      }
+      const { error } = await supabase.from('couples').update({ login_pin: pin }).eq('id', c.id)
+      if (!error) {
+        setCouples(prev => prev.map(x => x.id === c.id ? { ...x, login_pin: pin } : x))
+      }
+    }
+    setBulkGenerating(false)
   }
   const fileRef = useRef()
 
@@ -242,12 +261,21 @@ function ManageCouplesContent() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-primary">Parejas</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => downloadTemplate(couples.length ? couples : DUMMY_COUPLES)}
             className="text-sm border border-gray-200 text-text-secondary px-3 py-1.5 rounded-lg hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
           >
-            ↓ Descargar plantilla CSV
+            ↓ Plantilla CSV
+          </button>
+          <button
+            onClick={() => setActiveTab('pins')}
+            className={`text-sm px-3 py-1.5 rounded-lg font-medium transition-colors
+              ${activeTab === 'pins'
+                ? 'bg-secondary text-white'
+                : 'bg-secondary/10 text-secondary hover:bg-secondary/20'}`}
+          >
+            🔑 PINs
           </button>
           <button
             onClick={() => setActiveTab(activeTab === 'import' ? 'list' : 'import')}
@@ -348,6 +376,142 @@ function ManageCouplesContent() {
               {importResult.message}
             </div>
           )}
+        </div>
+      )}
+
+      {/* PIN management tab */}
+      {activeTab === 'pins' && (
+        <div className="space-y-4">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <p className="text-sm text-text-secondary">
+                Códigos PIN para jugadores sin cuenta <code className="bg-gray-100 px-1 rounded">@rubatec.cat</code>.
+                Da cada PIN al jugador correspondiente para que pueda acceder al portal.
+              </p>
+            </div>
+            <button
+              onClick={bulkGeneratePins}
+              disabled={bulkGenerating || couples.every(c => c.login_pin)}
+              style={{
+                background: bulkGenerating ? '#f1f5f9' : 'rgba(4,51,255,.07)',
+                color: bulkGenerating ? '#94a3b8' : '#0433FF',
+                border: '1px solid',
+                borderColor: bulkGenerating ? '#e2e8f0' : 'rgba(4,51,255,.2)',
+                borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600,
+                cursor: bulkGenerating || couples.every(c => c.login_pin) ? 'default' : 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {bulkGenerating ? 'Generando…' : '✦ Generar PINs faltantes'}
+            </button>
+          </div>
+
+          {DIVISIONS.map(div => {
+            const divCouples = couples.filter(c => c.division === div)
+            if (!divCouples.length) return null
+            const groups = [...new Set(divCouples.map(c => c.group_code))].sort()
+            return (
+              <div key={div}>
+                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-2 capitalize">
+                  División {div}
+                </h2>
+                <div className="bg-surface border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-50 text-text-secondary">
+                      <tr>
+                        <th className="text-left px-4 py-2 font-medium">Grupo</th>
+                        <th className="text-left px-4 py-2 font-medium">Pareja</th>
+                        <th className="text-left px-4 py-2 font-medium">Jugadores</th>
+                        <th className="text-left px-4 py-2 font-medium">PIN</th>
+                        <th className="px-4 py-2" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {groups.flatMap(g =>
+                        divCouples
+                          .filter(c => c.group_code === g)
+                          .map(c => (
+                            <tr key={c.id} className="hover:bg-gray-50/50">
+                              <td className="px-4 py-2.5 font-medium text-primary">{g}</td>
+                              <td className="px-4 py-2.5 font-semibold text-text-primary">{c.team_name}</td>
+                              <td className="px-4 py-2.5 text-text-secondary">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                  <span style={{ color: c.player_1_email ? '#64748b' : '#ef4444' }}>
+                                    {c.player_1_name}
+                                    {c.player_1_email ? '' : ' · sin email'}
+                                  </span>
+                                  <span style={{ color: c.player_2_email ? '#64748b' : '#ef4444' }}>
+                                    {c.player_2_name}
+                                    {c.player_2_email ? '' : ' · sin email'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {editingPinId === c.id ? (
+                                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                    <input
+                                      type="text"
+                                      value={pinDraft}
+                                      onChange={e => { setPinDraft(e.target.value.toUpperCase()); setPinError('') }}
+                                      onKeyDown={e => { if (e.key === 'Enter') savePin(c.id); if (e.key === 'Escape') { setEditingPinId(null); setPinDraft('') } }}
+                                      maxLength={8}
+                                      autoFocus
+                                      style={{
+                                        width: 80, border: '1px solid #e2e8f0',
+                                        borderRadius: 5, padding: '3px 7px', fontSize: 11,
+                                        fontWeight: 700, letterSpacing: 2, fontFamily: 'DM Mono, monospace',
+                                        outline: 'none', color: '#001d72',
+                                      }}
+                                    />
+                                    <button onClick={() => { setPinDraft(generatePin()); setPinError('') }}
+                                      style={{ fontSize: 10, padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: 4, cursor: 'pointer', background: 'white', color: '#64748b' }}>
+                                      ↺
+                                    </button>
+                                    <button onClick={() => savePin(c.id)} disabled={pinSaving}
+                                      style={{ fontSize: 10, padding: '3px 8px', border: 'none', borderRadius: 4, cursor: 'pointer', background: '#001d72', color: 'white', fontWeight: 600 }}>
+                                      {pinSaving ? '…' : '✓'}
+                                    </button>
+                                    <button onClick={() => { setEditingPinId(null); setPinDraft(''); setPinError('') }}
+                                      style={{ fontSize: 10, padding: '3px 6px', border: '1px solid #e2e8f0', borderRadius: 4, cursor: 'pointer', background: 'white', color: '#94a3b8' }}>
+                                      ✕
+                                    </button>
+                                  </div>
+                                ) : c.login_pin ? (
+                                  <span style={{
+                                    fontFamily: 'DM Mono, monospace', fontWeight: 700, fontSize: 12,
+                                    letterSpacing: 2, color: '#0433FF', background: 'rgba(4,51,255,.07)',
+                                    padding: '3px 8px', borderRadius: 5,
+                                  }}>{c.login_pin}</span>
+                                ) : (
+                                  <span style={{ color: '#cbd5e1', fontSize: 11 }}>—</span>
+                                )}
+                                {editingPinId === c.id && pinError && (
+                                  <p style={{ color: '#ef4444', fontSize: 10, marginTop: 2 }}>{pinError}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {c.login_pin && (
+                                    <button onClick={() => copyPin(c.login_pin, c.id)}
+                                      style={{ fontSize: 11, padding: '3px 7px', border: '1px solid #e2e8f0', borderRadius: 5, cursor: 'pointer', background: 'white', color: copiedId === c.id ? '#0cb882' : '#94a3b8' }}>
+                                      {copiedId === c.id ? '✓ Copiado' : '⎘ Copiar'}
+                                    </button>
+                                  )}
+                                  <button onClick={() => { setEditingPinId(c.id); setPinDraft(c.login_pin ?? generatePin()); setPinError('') }}
+                                    style={{ fontSize: 11, padding: '3px 7px', border: '1px solid #e2e8f0', borderRadius: 5, cursor: 'pointer', background: 'white', color: '#64748b' }}>
+                                    {c.login_pin ? '✎' : '+ Asignar'}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 

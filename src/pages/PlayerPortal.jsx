@@ -106,22 +106,27 @@ export default function PlayerPortal() {
 
           {/* PIN login toggle */}
           {!showPin ? (
-            <button
-              onClick={() => setShowPin(true)}
-              style={{
-                width: '100%',
-                background: 'rgba(0,29,114,.04)',
-                border: '1px solid rgba(0,29,114,.12)',
-                color: '#001d72',
-                padding: '11px 20px',
-                borderRadius: 12,
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: 'pointer',
-              }}
-            >
-              🔑 {t('portal.login_pin')}
-            </button>
+            <>
+              <button
+                onClick={() => setShowPin(true)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(0,29,114,.04)',
+                  border: '1px solid rgba(0,29,114,.12)',
+                  color: '#001d72',
+                  padding: '11px 20px',
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                🔑 {t('portal.login_pin')}
+              </button>
+              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 16, lineHeight: 1.5 }}>
+                {t('portal.pin_hint')}
+              </p>
+            </>
           ) : (
             <div style={{ textAlign: 'left' }}>
               <p style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>

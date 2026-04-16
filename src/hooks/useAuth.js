@@ -31,30 +31,47 @@ export function useAuth() {
       .eq('id', user.id)
       .single()
       .then(async ({ data }) => {
-        if (data) { setProfile(data); return }
+        // If we already have a couple linked, we're done
+        if (data?.couple_id) { setProfile(data); return }
 
-        // First login — no users row yet. Try to link via couple email.
-        // Requires player_1_email / player_2_email columns on couples table.
-        // SQL to add them: ALTER TABLE couples ADD COLUMN IF NOT EXISTS player_1_email TEXT;
-        //                  ALTER TABLE couples ADD COLUMN IF NOT EXISTS player_2_email TEXT;
+        // Row exists but couple_id is null, OR first login — try to auto-link via email
         const email = user.email?.toLowerCase()
         const { data: couple, error: cErr } = await supabase
           .from('couples')
           .select('id')
           .or(`player_1_email.eq.${email},player_2_email.eq.${email}`)
           .maybeSingle()
-        // Silently continue if columns don't exist yet (cErr will be non-null)
+        // Silently continue if columns don't exist yet
         if (cErr && cErr.message?.includes('column')) {
           console.warn('player email columns missing from couples — skipping auto-link')
         }
 
+        const coupleId = couple?.id ?? null
+
+        if (data) {
+          // Row exists but couple_id was null — update it if we found a link
+          if (coupleId) {
+            const { data: updated } = await supabase
+              .from('users')
+              .update({ couple_id: coupleId })
+              .eq('id', user.id)
+              .select('couple_id, role, display_name, avatar_url')
+              .single()
+            setProfile(updated ?? { ...data, couple_id: coupleId })
+          } else {
+            setProfile(data)
+          }
+          return
+        }
+
+        // First login — insert row
         const newRow = {
           id:           user.id,
           email:        user.email,
           display_name: user.user_metadata?.full_name ?? user.email,
           avatar_url:   user.user_metadata?.avatar_url ?? null,
           role:         'player',
-          couple_id:    couple?.id ?? null,
+          couple_id:    coupleId,
         }
         const { data: inserted } = await supabase
           .from('users')

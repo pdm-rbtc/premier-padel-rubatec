@@ -74,6 +74,7 @@
     "pin_cancel": "Volver",
     "pin_not_found": "Código PIN no válido. Comprueba que lo has escrito correctamente.",
     "pin_exit": "Salir",
+    "pin_hint": "¿No tienes cuenta @rubatec.cat? Pide tu PIN a los administradores.",
     "loading": "Cargando...",
     "no_couple": "No tienes pareja asignada aún. Contacta con el administrador.",
     "my_couple": "Mi Pareja",
