@@ -147,7 +147,12 @@
     "btn_discard": "Descartar",
     "consolation": "Quadre B",
     "tbd": "Per determinar",
-    "unknown": "Desconegut"
+    "unknown": "Desconegut",
+    "loading": "Carregant quadre…",
+    "swipe_hint": "← Llisca per veure el quadre complet →",
+    "round_quarter": "Quarts",
+    "round_semi": "Semis",
+    "round_final": "Final"
   },
   "errors": {
     "not_authorized": "No tens permís per a aquesta acció",

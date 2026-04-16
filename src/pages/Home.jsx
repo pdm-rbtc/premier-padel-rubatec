@@ -146,7 +146,7 @@ export default function Home() {
                 boxShadow: active ? '0 2px 8px rgba(0,29,114,.15)' : 'none',
               }}
             >
-              {dc.icon} {dc.label}
+              {dc.icon} {t('divisions.' + d)}
               <span style={{ fontSize: 9, opacity: .7, marginLeft: 3 }}>
                 {GROUP_CODES[d].length}g
               </span>

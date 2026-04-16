@@ -3,26 +3,8 @@ import { useAuth } from '../hooks/useAuth.js'
 import { signInWithGoogle } from '../lib/auth.js'
 import { useI18n } from '../i18n/index.jsx'
 import LiveTicker from './LiveTicker.jsx'
-
-function Isotype() {
-  return (
-    <div style={{
-      background: 'linear-gradient(135deg,#11efb5,#0433FF)',
-      width: 30,
-      height: 30,
-      borderRadius: 8,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: 14,
-      fontWeight: 700,
-      color: 'white',
-      flexShrink: 0,
-    }}>
-      R
-    </div>
-  )
-}
+import logoTournament from '../assets/logo-tournament.svg'
+import logoRubatec    from '../assets/logo-rubatec.svg'
 
 export default function Layout() {
   const { user, isAdmin } = useAuth()
@@ -71,22 +53,22 @@ export default function Layout() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
             {/* Brand */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Isotype />
-                <span style={{ color: 'rgba(255,255,255,.4)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px' }}>
-                  RUBATEC · 2026
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <img src={logoTournament} alt="3r Torneig Premium Pàdel" style={{ height: 42, width: 'auto' }} />
               </div>
-              <h1 style={{ color: 'white', fontSize: 21, fontWeight: 700, margin: '4px 0 2px', letterSpacing: '-.3px' }}>
-                3r {lang === 'ca' ? 'Torneig' : 'Torneo'} Premium Pádel
-              </h1>
               <p style={{ color: 'rgba(255,255,255,.4)', fontSize: 11, margin: 0 }}>
                 {t('home.subtitle')} · 48 {t('home.parejas')} · 12 {t('home.pistas')}
               </p>
             </div>
 
-            {/* Nav tabs + language toggle */}
+            {/* Nav tabs + language toggle + Rubatec logo */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, marginTop: 5 }}>
+              <img
+                src={logoRubatec}
+                alt="Rubatec"
+                className="hidden sm:block"
+                style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1)', opacity: 0.65, marginBottom: 2 }}
+              />
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 <Link to="/" style={tabCls(!onPortal && !onAdmin)}>🏆 {t('nav.torneo')}</Link>
                 {user

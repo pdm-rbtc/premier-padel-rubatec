@@ -147,7 +147,12 @@
     "btn_discard": "Descartar",
     "consolation": "Cuadro B",
     "tbd": "Por determinar",
-    "unknown": "Desconocido"
+    "unknown": "Desconocido",
+    "loading": "Cargando cuadro…",
+    "swipe_hint": "← Desliza para ver el cuadro completo →",
+    "round_quarter": "Cuartos",
+    "round_semi": "Semis",
+    "round_final": "Final"
   },
   "errors": {
     "not_authorized": "No tienes permiso para esta acción",

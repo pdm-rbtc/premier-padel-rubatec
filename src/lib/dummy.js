@@ -89,7 +89,7 @@ export const KNOCKOUT_STRUCTURE = {
   diamant: {
     main: [
       {
-        round: 'Cuartos', slots: [
+        round: 'quarter', slots: [
           { label: 'A1', side_a: '1º G1', side_b: '2º G3' },
           { label: 'A2', side_a: '1º G2', side_b: 'Mejor 3º' },
           { label: 'A3', side_a: '1º G3', side_b: '2º Mejor 3º' },
@@ -97,13 +97,13 @@ export const KNOCKOUT_STRUCTURE = {
         ],
       },
       {
-        round: 'Semis', slots: [
+        round: 'semi', slots: [
           { label: 'S1', side_a: 'Gan. A1', side_b: 'Gan. A2' },
           { label: 'S2', side_a: 'Gan. A3', side_b: 'Gan. A4' },
         ],
       },
       {
-        round: 'Final', slots: [
+        round: 'final', slots: [
           { label: 'Final', side_a: 'Gan. S1', side_b: 'Gan. S2' },
           { label: '3º/4º', side_a: 'Per. S1', side_b: 'Per. S2' },
         ],
@@ -117,7 +117,7 @@ export const KNOCKOUT_STRUCTURE = {
   or: {
     main: [
       {
-        round: 'Cuartos', slots: [
+        round: 'quarter', slots: [
           { label: 'A1', side_a: '1º G1', side_b: 'Mejor 2º' },
           { label: 'A2', side_a: '1º G2', side_b: '2º Mejor 2º' },
           { label: 'A3', side_a: '1º G3', side_b: '1º G4' },
@@ -125,13 +125,13 @@ export const KNOCKOUT_STRUCTURE = {
         ],
       },
       {
-        round: 'Semis', slots: [
+        round: 'semi', slots: [
           { label: 'S1', side_a: 'Gan. A1', side_b: 'Gan. A2' },
           { label: 'S2', side_a: 'Gan. A3', side_b: 'Gan. A4' },
         ],
       },
       {
-        round: 'Final', slots: [
+        round: 'final', slots: [
           { label: 'Final', side_a: 'Gan. S1', side_b: 'Gan. S2' },
           { label: '3º/4º', side_a: 'Per. S1', side_b: 'Per. S2' },
         ],
@@ -148,13 +148,13 @@ export const KNOCKOUT_STRUCTURE = {
   plata: {
     main: [
       {
-        round: 'Semis', slots: [
+        round: 'semi', slots: [
           { label: 'S1', side_a: '1º G1', side_b: '1º G2' },
           { label: 'S2', side_a: '1º G3', side_b: 'Mejor 2º' },
         ],
       },
       {
-        round: 'Final', slots: [
+        round: 'final', slots: [
           { label: 'Final', side_a: 'Gan. S1', side_b: 'Gan. S2' },
           { label: '3º/4º', side_a: 'Per. S1', side_b: 'Per. S2' },
         ],
