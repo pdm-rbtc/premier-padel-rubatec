@@ -175,9 +175,14 @@ function ManageCouplesContent() {
         if (!errors.length) {
           setPreview(data.map(row => {
             // Combine per-player centre/department into "Centre1 · Centre2" for DB storage
-            const centres = [row.player_1_centre?.trim(), row.player_2_centre?.trim()].filter(Boolean)
-            const depts   = [row.player_1_department?.trim(), row.player_2_department?.trim()].filter(Boolean)
+            const p1Centre = row.player_1_centre?.trim() || null
+            const p2Centre = row.player_2_centre?.trim() || null
+            const p1Dept   = row.player_1_department?.trim() || null
+            const p2Dept   = row.player_2_department?.trim() || null
+            const centres  = [p1Centre, p2Centre].filter(Boolean)
+            const depts    = [p1Dept, p2Dept].filter(Boolean)
             return {
+              // Couple fields (stored in couples table)
               player_1_name:  `${row.player_1_name.trim()} ${row.player_1_surname.trim()}`.trim(),
               player_1_email: row.player_1_email?.trim().toLowerCase() || null,
               player_2_name:  `${row.player_2_name.trim()} ${row.player_2_surname.trim()}`.trim(),
@@ -188,6 +193,15 @@ function ManageCouplesContent() {
               centre:         centres.length ? centres.join(' · ') : null,
               department:     depts.length   ? depts.join(' · ')   : null,
               team_name:      autoTeamName(row.player_1_name, row.player_1_surname, row.player_2_name, row.player_2_surname),
+              // Per-player raw fields — used to upsert into players table (not shown in preview)
+              _p1_first_name: row.player_1_name.trim(),
+              _p1_last_name:  row.player_1_surname.trim(),
+              _p1_centre:     p1Centre,
+              _p1_dept:       p1Dept,
+              _p2_first_name: row.player_2_name.trim(),
+              _p2_last_name:  row.player_2_surname.trim(),
+              _p2_centre:     p2Centre,
+              _p2_dept:       p2Dept,
             }
           }))
         } else {
@@ -230,10 +244,52 @@ function ManageCouplesContent() {
         }
       }
 
-      // Insert couples
+      // ── Step 1: Upsert players (single source of truth from CSV) ──────────────
+      // Collect unique players that have an email — email is the unique key
+      const playerByEmail = new Map()
+      for (const row of preview) {
+        if (row.player_1_email) {
+          playerByEmail.set(row.player_1_email, {
+            first_name: row._p1_first_name,
+            last_name:  row._p1_last_name,
+            email:      row.player_1_email,
+            centre:     row._p1_centre,
+            department: row._p1_dept,
+          })
+        }
+        if (row.player_2_email) {
+          playerByEmail.set(row.player_2_email, {
+            first_name: row._p2_first_name,
+            last_name:  row._p2_last_name,
+            email:      row.player_2_email,
+            centre:     row._p2_centre,
+            department: row._p2_dept,
+          })
+        }
+      }
+
+      const { data: upsertedPlayers, error: playerError } = await supabase
+        .from('players')
+        .upsert([...playerByEmail.values()], { onConflict: 'email' })
+        .select('id, email')
+
+      if (playerError) throw new Error(`Error al sincronizar jugadores: ${playerError.message}`)
+
+      const emailToPlayerId = new Map((upsertedPlayers ?? []).map(p => [p.email, p.id]))
+
+      // ── Step 2: Build couple rows with FK references + strip internal _ fields ─
+      const coupleRows = preview.map(({ _p1_first_name, _p1_last_name, _p1_centre, _p1_dept,
+                                        _p2_first_name, _p2_last_name, _p2_centre, _p2_dept,
+                                        ...rest }) => ({
+        ...rest,
+        player_1_id: rest.player_1_email ? (emailToPlayerId.get(rest.player_1_email) ?? null) : null,
+        player_2_id: rest.player_2_email ? (emailToPlayerId.get(rest.player_2_email) ?? null) : null,
+      }))
+
+      // ── Step 3: Insert couples ────────────────────────────────────────────────
       const { data: inserted, error: insertError } = await supabase
         .from('couples')
-        .insert(preview)
+        .insert(coupleRows)
         .select()
 
       if (insertError) throw new Error(insertError.message)
@@ -261,7 +317,7 @@ function ManageCouplesContent() {
       // Re-link registered users to their new couples (fires tr_link_user_to_couple trigger)
       await supabase.rpc('relink_users_to_couples')
 
-      setImportResult({ ok: true, message: `${inserted.length} parejas importadas y clasificaciones inicializadas.` })
+      setImportResult({ ok: true, message: `${inserted.length} parejas importadas (${emailToPlayerId.size} jugadores sincronizados) y clasificaciones inicializadas.` })
       setCouples(replace ? inserted : prev => [...prev, ...inserted])
       setPreview(null)
       setParseErrors([])
