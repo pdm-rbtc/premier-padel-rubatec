@@ -330,7 +330,7 @@ function AuthenticatedPortal() {
   }
 
   function handleSignOut() {
-    if (isPinSession) {
+    if (devMode.active) {
       devMode.clearDev()
     } else {
       signOut()
