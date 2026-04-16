@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { isAdmin } from '../lib/auth.js'
+import { isAdmin, isAdminEmail } from '../lib/auth.js'
 import { useDevMode } from '../contexts/DevMode.jsx'
 
 export function useAuth() {
@@ -98,15 +98,17 @@ export function useAuth() {
       })
   }, [user?.id])
 
-  // Dev mode overrides coupleId for portal testing; real auth (isAdmin) always uses real user
   const coupleId = devMode.active ? devMode.coupleId : (profile?.couple_id ?? null)
+
+  // Admin via real Supabase session OR via email-typed devMode session
+  const adminStatus = isAdmin(user) || (devMode.active && !devMode.pinSession && isAdminEmail(devMode.email))
 
   return {
     user,
     profile,
     loading,
     coupleId,
-    isAdmin: isAdmin(user),
+    isAdmin: adminStatus,
     devMode,
   }
 }

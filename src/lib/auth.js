@@ -1,15 +1,5 @@
 import { supabase } from './supabase.js'
 
-export async function signInWithEmail(email) {
-  return supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${window.location.origin}/premier-padel-rubatec/`,
-      shouldCreateUser: true,
-    },
-  })
-}
-
 export async function signOut() {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
@@ -20,7 +10,7 @@ export async function getSession() {
   return session
 }
 
-const ADMIN_EMAILS = [
+export const ADMIN_EMAILS = [
   'pdemora@rubatec.cat',
   'ggarcia@rubatec.cat',
   'ssomavilla@rubatec.cat',
@@ -29,4 +19,8 @@ const ADMIN_EMAILS = [
 
 export function isAdmin(user) {
   return user && ADMIN_EMAILS.includes(user.email)
+}
+
+export function isAdminEmail(email) {
+  return email && ADMIN_EMAILS.includes(email.toLowerCase().trim())
 }

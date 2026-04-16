@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { isAdminEmail } from '../lib/auth.js'
 
 const EMPTY = { active: false, email: '', coupleId: null, coupleInfo: null, pinSession: false, pin: '' }
 
@@ -52,9 +53,10 @@ export function DevModeProvider({ children }) {
       couple = c ?? null
     }
 
-    if (!couple) return { error: 'couple_not_found' }
+    // Admin emails have no couple — allow them through so they get admin access
+    if (!couple && !isAdminEmail(normalizedEmail)) return { error: 'couple_not_found' }
 
-    const next = { active: true, email: normalizedEmail, coupleId: couple.id, coupleInfo: couple, pinSession: false, pin: '' }
+    const next = { active: true, email: normalizedEmail, coupleId: couple?.id ?? null, coupleInfo: couple ?? null, pinSession: false, pin: '' }
     localStorage.setItem('devMode', JSON.stringify(next))
     setState(next)
     return {}

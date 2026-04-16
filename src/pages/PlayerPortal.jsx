@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { useDevMode } from '../contexts/DevMode.jsx'
-import { signInWithEmail, signOut } from '../lib/auth.js'
+import { signOut } from '../lib/auth.js'
 import { useMatches } from '../hooks/useMatches.js'
 import ScoreInput from '../components/ScoreInput.jsx'
 import LiveBadge from '../components/LiveBadge.jsx'
@@ -62,7 +62,6 @@ export default function PlayerPortal() {
   const devMode = useDevMode()
 
   const [emailInput, setEmailInput]     = useState('')
-  const [emailSent, setEmailSent]       = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailError, setEmailError]     = useState('')
 
@@ -76,12 +75,10 @@ export default function PlayerPortal() {
     if (!email) return
     setEmailLoading(true)
     setEmailError('')
-    const { error } = await signInWithEmail(email)
+    const result = await devMode.setDev(email)
     setEmailLoading(false)
-    if (error) {
+    if (result.error) {
       setEmailError(t('portal.login_email_error'))
-    } else {
-      setEmailSent(true)
     }
   }
 
@@ -112,161 +109,135 @@ export default function PlayerPortal() {
             {t('portal.login_subtitle')}
           </p>
 
-          {emailSent ? (
-            <div style={{
-              background: 'rgba(17,239,181,.08)',
-              border: '1px solid rgba(17,239,181,.3)',
-              borderRadius: 14,
-              padding: '20px 16px',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📬</div>
-              <p style={{ fontWeight: 700, color: '#0032a0', fontSize: 14, margin: '0 0 6px' }}>
-                {t('portal.login_email_sent_title')}
-              </p>
-              <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, margin: '0 0 14px' }}>
-                {t('portal.login_email_sent_desc').replace('{email}', emailInput.trim())}
-              </p>
-              <button
-                onClick={() => { setEmailSent(false); setEmailInput('') }}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}
-              >
-                {t('portal.login_email_sent_retry')}
-              </button>
-            </div>
-          ) : (
+          {/* Email login */}
+          <div style={{ textAlign: 'left' }}>
+            <input
+              type="email"
+              value={emailInput}
+              onChange={e => { setEmailInput(e.target.value); setEmailError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleEmailLogin()}
+              placeholder={t('portal.login_email_placeholder')}
+              autoFocus
+              style={{
+                width: '100%',
+                border: emailError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                borderRadius: 12,
+                padding: '12px 14px',
+                fontSize: 14,
+                outline: 'none',
+                color: '#0f172a',
+                marginBottom: 10,
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={handleEmailLogin}
+              disabled={emailLoading || !emailInput.trim()}
+              style={{
+                width: '100%',
+                background: emailLoading || !emailInput.trim() ? '#f1f5f9' : 'linear-gradient(135deg,#0032a0,#0433FF)',
+                color: emailLoading || !emailInput.trim() ? '#94a3b8' : 'white',
+                border: 'none',
+                borderRadius: 12,
+                padding: '12px',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: emailLoading || !emailInput.trim() ? 'default' : 'pointer',
+                boxShadow: emailLoading || !emailInput.trim() ? 'none' : '0 4px 14px rgba(0,29,114,.25)',
+              }}
+            >
+              {emailLoading ? t('portal.login_email_sending') : t('portal.login_email_button')}
+            </button>
+            {emailError && (
+              <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{emailError}</p>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 16px' }}>
+            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('portal.login_or')}</span>
+            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+          </div>
+
+          {/* PIN login toggle */}
+          {!showPin ? (
             <>
-              {/* Email login */}
-              <div style={{ textAlign: 'left' }}>
+              <button
+                onClick={() => setShowPin(true)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(0,29,114,.04)',
+                  border: '1px solid rgba(0,29,114,.12)',
+                  color: '#0032a0',
+                  padding: '11px 20px',
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                🔑 {t('portal.login_pin')}
+              </button>
+              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 16, lineHeight: 1.5 }}>
+                {t('portal.pin_hint')}
+              </p>
+            </>
+          ) : (
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
+                {t('portal.pin_desc')}
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <input
-                  type="email"
-                  value={emailInput}
-                  onChange={e => { setEmailInput(e.target.value); setEmailError('') }}
-                  onKeyDown={e => e.key === 'Enter' && handleEmailLogin()}
-                  placeholder={t('portal.login_email_placeholder')}
+                  type="text"
+                  value={pinInput}
+                  onChange={e => { setPinInput(e.target.value.toUpperCase()); setPinError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handlePinLogin()}
+                  placeholder={t('portal.pin_placeholder')}
+                  maxLength={8}
                   autoFocus
                   style={{
-                    width: '100%',
-                    border: emailError ? '1px solid #fecaca' : '1px solid #e2e8f0',
-                    borderRadius: 12,
-                    padding: '12px 14px',
-                    fontSize: 14,
+                    flex: 1,
+                    border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    letterSpacing: 3,
+                    textAlign: 'center',
                     outline: 'none',
-                    color: '#0f172a',
-                    marginBottom: 10,
-                    boxSizing: 'border-box',
+                    fontFamily: 'DM Mono, monospace',
+                    color: '#0032a0',
                   }}
                 />
                 <button
-                  onClick={handleEmailLogin}
-                  disabled={emailLoading || !emailInput.trim()}
+                  onClick={handlePinLogin}
+                  disabled={pinLoading}
                   style={{
-                    width: '100%',
-                    background: emailLoading || !emailInput.trim() ? '#f1f5f9' : 'linear-gradient(135deg,#0032a0,#0433FF)',
-                    color: emailLoading || !emailInput.trim() ? '#94a3b8' : 'white',
+                    background: pinLoading ? '#f1f5f9' : '#0032a0',
+                    color: pinLoading ? '#94a3b8' : 'white',
                     border: 'none',
-                    borderRadius: 12,
-                    padding: '12px',
+                    borderRadius: 10,
+                    padding: '10px 18px',
                     fontWeight: 700,
                     fontSize: 14,
-                    cursor: emailLoading || !emailInput.trim() ? 'default' : 'pointer',
-                    boxShadow: emailLoading || !emailInput.trim() ? 'none' : '0 4px 14px rgba(0,29,114,.25)',
+                    cursor: pinLoading ? 'default' : 'pointer',
                   }}
                 >
-                  {emailLoading ? t('portal.login_email_sending') : t('portal.login_email_button')}
+                  {pinLoading ? '…' : t('portal.pin_apply')}
                 </button>
-                {emailError && (
-                  <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{emailError}</p>
-                )}
               </div>
-
-              {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 16px' }}>
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('portal.login_or')}</span>
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-              </div>
-
-              {/* PIN login toggle */}
-              {!showPin ? (
-                <>
-                  <button
-                    onClick={() => setShowPin(true)}
-                    style={{
-                      width: '100%',
-                      background: 'rgba(0,29,114,.04)',
-                      border: '1px solid rgba(0,29,114,.12)',
-                      color: '#0032a0',
-                      padding: '11px 20px',
-                      borderRadius: 12,
-                      fontWeight: 600,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🔑 {t('portal.login_pin')}
-                  </button>
-                  <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 16, lineHeight: 1.5 }}>
-                    {t('portal.pin_hint')}
-                  </p>
-                </>
-              ) : (
-                <div style={{ textAlign: 'left' }}>
-                  <p style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
-                    {t('portal.pin_desc')}
-                  </p>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      type="text"
-                      value={pinInput}
-                      onChange={e => { setPinInput(e.target.value.toUpperCase()); setPinError('') }}
-                      onKeyDown={e => e.key === 'Enter' && handlePinLogin()}
-                      placeholder={t('portal.pin_placeholder')}
-                      maxLength={8}
-                      autoFocus
-                      style={{
-                        flex: 1,
-                        border: pinError ? '1px solid #fecaca' : '1px solid #e2e8f0',
-                        borderRadius: 10,
-                        padding: '10px 12px',
-                        fontSize: 15,
-                        fontWeight: 700,
-                        letterSpacing: 3,
-                        textAlign: 'center',
-                        outline: 'none',
-                        fontFamily: 'DM Mono, monospace',
-                        color: '#0032a0',
-                      }}
-                    />
-                    <button
-                      onClick={handlePinLogin}
-                      disabled={pinLoading}
-                      style={{
-                        background: pinLoading ? '#f1f5f9' : '#0032a0',
-                        color: pinLoading ? '#94a3b8' : 'white',
-                        border: 'none',
-                        borderRadius: 10,
-                        padding: '10px 18px',
-                        fontWeight: 700,
-                        fontSize: 14,
-                        cursor: pinLoading ? 'default' : 'pointer',
-                      }}
-                    >
-                      {pinLoading ? '…' : t('portal.pin_apply')}
-                    </button>
-                  </div>
-                  {pinError && (
-                    <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{pinError}</p>
-                  )}
-                  <button
-                    onClick={() => { setShowPin(false); setPinInput(''); setPinError('') }}
-                    style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', marginTop: 8 }}
-                  >
-                    {t('portal.pin_cancel')}
-                  </button>
-                </div>
+              {pinError && (
+                <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{pinError}</p>
               )}
-            </>
+              <button
+                onClick={() => { setShowPin(false); setPinInput(''); setPinError('') }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', marginTop: 8 }}
+              >
+                {t('portal.pin_cancel')}
+              </button>
+            </div>
           )}
         </div>
       </div>
