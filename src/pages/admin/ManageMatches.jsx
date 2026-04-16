@@ -1,7 +1,189 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import AdminGuard from '../../components/AdminGuard.jsx'
+
+const DIV_MAP   = { Diamante: 'diamant', Oro: 'or', Plata: 'plata' }
+const HORA_MAP  = {
+  '9.30':  '9:30h - 10:00h',
+  '10':    '10:00h - 10:30h',
+  '10.30': '10:30h - 11:00h',
+  '11':    '11:00h - 11:30h',
+  '11.30': '11:30h - 12:00h',
+  '12':    '12:00h - 12:30h',
+  '12.30': '12:30h - 13:00h',
+  '13':    '13:00h - 13:30h',
+  '13.30': '13:30h - 14:00h',
+}
+
+function parseCourtCSV(text) {
+  const rows = []
+  const errors = []
+  const lines = text.trim().split('\n').slice(1)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line) continue
+    const parts = line.split(';').map(s => s.trim())
+    if (parts.length < 4) { errors.push(`Línea ${i + 2}: formato incorrecto`); continue }
+    const [divRaw, partido, horaRaw, pistaRaw] = parts
+    const division = DIV_MAP[divRaw]
+    if (!division) { errors.push(`Línea ${i + 2}: división desconocida "${divRaw}"`); continue }
+    const m = partido.match(/^(G\d+)\.(\d+)\s*[–\-]\s*G\d+\.(\d+)$/)
+    if (!m) { errors.push(`Línea ${i + 2}: partido no reconocido "${partido}"`); continue }
+    const time_slot = HORA_MAP[horaRaw]
+    if (!time_slot) { errors.push(`Línea ${i + 2}: hora desconocida "${horaRaw}"`); continue }
+    const court = parseInt(pistaRaw)
+    if (isNaN(court) || court < 1 || court > 12) { errors.push(`Línea ${i + 2}: pista inválida "${pistaRaw}"`); continue }
+    rows.push({
+      division,
+      group_code: m[1],
+      seed_a: parseInt(m[2]),
+      seed_b: parseInt(m[3]),
+      time_slot,
+      court: `Pista ${court}`,
+      court_label: String.fromCharCode(64 + court),
+    })
+  }
+  return { rows, errors }
+}
+
+function CourtImportPanel({ onClose }) {
+  const fileRef = useRef()
+  const [parsed, setParsed]     = useState(null)
+  const [errors, setErrors]     = useState([])
+  const [preview, setPreview]   = useState(null)
+  const [saving, setSaving]     = useState(false)
+  const [result, setResult]     = useState(null)
+
+  function handleFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const { rows, errors } = parseCourtCSV(ev.target.result)
+      setParsed(rows)
+      setErrors(errors)
+      setPreview(null)
+      setResult(null)
+    }
+    reader.readAsText(file, 'utf-8')
+  }
+
+  async function handlePreview() {
+    if (!parsed?.length) return
+    const { data: couples } = await supabase
+      .from('couples').select('id, division, group_code, seed')
+    const { data: matches } = await supabase
+      .from('matches').select('id, division, group_code, couple_a_id, couple_b_id')
+      .eq('phase', 'group')
+
+    const coupleMap = {}
+    for (const c of (couples ?? [])) coupleMap[`${c.division}-${c.group_code}-${c.seed}`] = c.id
+
+    const resolved = []
+    const unresolved = []
+    for (const row of parsed) {
+      const idA = coupleMap[`${row.division}-${row.group_code}-${row.seed_a}`]
+      const idB = coupleMap[`${row.division}-${row.group_code}-${row.seed_b}`]
+      if (!idA || !idB) { unresolved.push(`${row.division} ${row.group_code} ${row.seed_a}v${row.seed_b}: pareja no encontrada`); continue }
+      const match = (matches ?? []).find(m =>
+        (m.couple_a_id === idA && m.couple_b_id === idB) ||
+        (m.couple_a_id === idB && m.couple_b_id === idA)
+      )
+      if (!match) { unresolved.push(`${row.division} ${row.group_code} ${row.seed_a}v${row.seed_b}: partido no encontrado`); continue }
+      resolved.push({ matchId: match.id, court: row.court, court_label: row.court_label, time_slot: row.time_slot,
+        label: `${row.division.toUpperCase()} ${row.group_code} ${row.seed_a}v${row.seed_b}` })
+    }
+    setErrors(prev => [...prev, ...unresolved])
+    setPreview(resolved)
+  }
+
+  async function handleSave() {
+    if (!preview?.length) return
+    setSaving(true)
+    setResult(null)
+    let failed = 0
+    for (const row of preview) {
+      const { error } = await supabase.from('matches').update({
+        court: row.court,
+        court_label: row.court_label,
+        time_slot: row.time_slot,
+      }).eq('id', row.matchId)
+      if (error) failed++
+    }
+    setSaving(false)
+    setResult(failed === 0
+      ? { ok: true,  msg: `${preview.length} partidos actualizados correctamente.` }
+      : { ok: false, msg: `${failed} partidos fallaron. Revisa la consola.` })
+  }
+
+  return (
+    <div className="bg-surface border border-gray-100 rounded-xl p-5 space-y-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-text-primary">Importar distribución de pistas</h2>
+        <button onClick={onClose} className="text-text-secondary hover:text-text-primary text-sm">✕ Cerrar</button>
+      </div>
+      <p className="text-xs text-text-secondary">
+        CSV con cabecera <code className="bg-gray-100 px-1 rounded">Division;Partido;Hora;Pista</code>. Separador punto y coma. Actualiza pista y franja horaria en los partidos de grupo existentes.
+      </p>
+
+      <input ref={fileRef} type="file" accept=".csv" onChange={handleFile}
+        className="block w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+
+      {errors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-1">
+          <p className="text-sm font-medium text-red-700">Advertencias ({errors.length}):</p>
+          {errors.map((e, i) => <p key={i} className="text-xs text-red-600">{e}</p>)}
+        </div>
+      )}
+
+      {parsed && !preview && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-text-secondary">{parsed.length} filas parseadas</span>
+          <button onClick={handlePreview}
+            className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+            Vista previa
+          </button>
+        </div>
+      )}
+
+      {preview && (
+        <div className="space-y-3">
+          <div className="overflow-x-auto rounded-lg border border-gray-100 max-h-64 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 text-text-secondary sticky top-0">
+                <tr>
+                  {['Partido', 'Pista', 'Franja'].map(h => (
+                    <th key={h} className="text-left px-3 py-2 font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {preview.map((r, i) => (
+                  <tr key={i} className="hover:bg-gray-50/50">
+                    <td className="px-3 py-2 font-medium">{r.label}</td>
+                    <td className="px-3 py-2">{r.court}</td>
+                    <td className="px-3 py-2">{r.time_slot}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button onClick={handleSave} disabled={saving}
+            className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity">
+            {saving ? 'Guardando…' : `Aplicar ${preview.length} cambios`}
+          </button>
+        </div>
+      )}
+
+      {result && (
+        <div className={`rounded-lg px-4 py-3 text-sm font-medium ${result.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          {result.msg}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const FILTERS = [
   { value: 'disputed',             label: 'En disputa',          color: 'text-red-600 bg-red-50 border-red-200' },
@@ -20,10 +202,11 @@ export default function ManageMatches() {
 
 function ManageMatchesContent() {
   const { user } = useAuth()
-  const [filter, setFilter]     = useState('disputed')
-  const [matches, setMatches]   = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [resolving, setResolving] = useState(null)  // match id being resolved
+  const [filter, setFilter]           = useState('disputed')
+  const [matches, setMatches]         = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [resolving, setResolving]     = useState(null)
+  const [showImport, setShowImport]   = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -73,6 +256,13 @@ function ManageMatchesContent() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-primary">Partidos</h1>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowImport(v => !v)}
+            className={`text-sm px-3 py-1.5 rounded-lg font-medium transition-colors
+              ${showImport ? 'bg-primary text-white' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+          >
+            {showImport ? '← Volver' : '↑ Importar pistas'}
+          </button>
           {FILTERS.map(f => (
             <button
               key={f.value}
@@ -86,7 +276,9 @@ function ManageMatchesContent() {
         </div>
       </div>
 
-      {loading ? (
+      {showImport && <CourtImportPanel onClose={() => setShowImport(false)} />}
+
+      {!showImport && (loading ? (
         <p className="text-text-secondary text-sm">Cargando…</p>
       ) : matches.length === 0 ? (
         <div className="text-center py-12 text-text-secondary text-sm">
@@ -105,7 +297,7 @@ function ManageMatchesContent() {
             />
           ))}
         </div>
-      )}
+      ))}
     </div>
   )
 }
