@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { signInWithGoogle, signOut } from '../lib/auth.js'
 import { useI18n } from '../i18n/index.jsx'
+import logoTournament from '../assets/logo-tournament.svg'
+import logoRubatec    from '../assets/logo-rubatec.svg'
 
 const AUTH_BTN_DESKTOP = 'bg-accent text-primary px-3 py-1.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity'
 const AUTH_BTN_MOBILE  = 'w-full text-center bg-accent text-primary px-4 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity'
@@ -25,8 +27,12 @@ export default function Navbar() {
   return (
     <nav className="bg-primary text-white shadow-md relative z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" onClick={close} className="font-bold text-lg text-accent tracking-tight">
-          Pádel Rubatec
+        {/* Left: tournament logo + wordmark */}
+        <Link to="/" onClick={close} className="flex items-center gap-2.5 shrink-0">
+          <img src={logoTournament} alt="Torneo Pádel Rubatec" className="h-8 w-auto" />
+          <span className="font-bold text-base text-white leading-none hidden xs:block">
+            Pádel <span className="text-accent">Rubatec</span>
+          </span>
         </Link>
 
         {/* Desktop links */}
@@ -39,6 +45,13 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
+          {/* Rubatec company logo — white via CSS filter */}
+          <img
+            src={logoRubatec}
+            alt="Rubatec"
+            className="h-5 w-auto opacity-80"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
           {user
             ? <button onClick={signOut} className={AUTH_BTN_DESKTOP}>{t('nav.logout')}</button>
             : <button onClick={signInWithGoogle} className={AUTH_BTN_DESKTOP}>{t('nav.login')}</button>
