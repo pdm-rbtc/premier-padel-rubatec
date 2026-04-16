@@ -94,7 +94,7 @@ export default function PlayerPortal() {
   if (loading) return null
 
   // Allow access if real user OR active PIN session
-  if (!user && !(devMode.active && devMode.pinSession)) {
+  if (!user && !devMode.active) {
     return (
       <div style={{ maxWidth: 380, margin: '60px auto 0', textAlign: 'center' }}>
         <div style={{

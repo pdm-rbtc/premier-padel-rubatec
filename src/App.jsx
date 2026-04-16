@@ -13,10 +13,10 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<PlayerPortal />} />
+        <Route path="/torneo" element={<Home />} />
         <Route path="/bracket/:division" element={<BracketPage />} />
         <Route path="/match/:id" element={<MatchDetail />} />
-        <Route path="/portal" element={<PlayerPortal />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/couples" element={<ManageCouples />} />
         <Route path="/admin/matches" element={<ManageMatches />} />

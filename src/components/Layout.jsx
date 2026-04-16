@@ -9,7 +9,8 @@ export default function Layout() {
   const { user, isAdmin } = useAuth()
   const { pathname } = useLocation()
   const { t, lang, setLang } = useI18n()
-  const onPortal = pathname.startsWith('/portal')
+  const onPortal = pathname === '/' || pathname.startsWith('/portal')
+  const onTorneo = pathname.startsWith('/torneo') || pathname.startsWith('/bracket') || pathname.startsWith('/match')
   const onAdmin  = pathname.startsWith('/admin')
 
   const tabCls = (active) => ({
@@ -69,11 +70,8 @@ export default function Layout() {
                 style={{ height: 22, width: 'auto', opacity: 0.85, marginBottom: 2 }}
               />
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                <Link to="/" style={tabCls(!onPortal && !onAdmin)}>🏆 {t('nav.torneo')}</Link>
-                {user
-                  ? <Link to="/portal" style={tabCls(onPortal)}>👤 {t('nav.portal')}</Link>
-                  : <Link to="/portal" style={tabCls(false)}>👤 {t('nav.portal')}</Link>
-                }
+                <Link to="/" style={tabCls(onPortal)}>👤 {t('nav.portal')}</Link>
+                <Link to="/torneo" style={tabCls(onTorneo)}>🏆 {t('nav.torneo')}</Link>
                 {isAdmin && <Link to="/admin" style={tabCls(onAdmin)}>⚙️ {t('nav.admin')}</Link>}
               </div>
               {/* Language toggle */}
