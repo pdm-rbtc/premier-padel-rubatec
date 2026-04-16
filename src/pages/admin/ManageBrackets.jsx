@@ -204,6 +204,25 @@ function DivisionCard({ division, state, expanded, onToggle, onGenerated, onClea
     setClearing(true)
     setError(null)
 
+    // Fetch the IDs of knockout matches so we can purge match_log first
+    const { data: rows, error: fetchErr } = await supabase
+      .from('matches')
+      .select('id')
+      .eq('division', division)
+      .eq('phase', 'knockout')
+
+    if (fetchErr) { setError(fetchErr.message); setClearing(false); return }
+
+    const ids = (rows ?? []).map(r => r.id)
+
+    if (ids.length > 0) {
+      const { error: logErr } = await supabase
+        .from('match_log')
+        .delete()
+        .in('match_id', ids)
+      if (logErr) { setError(logErr.message); setClearing(false); return }
+    }
+
     const { error: dbError } = await supabase
       .from('matches')
       .delete()

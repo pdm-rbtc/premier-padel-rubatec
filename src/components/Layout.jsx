@@ -67,7 +67,7 @@ export default function Layout() {
                 src={logoRubatec}
                 alt="Rubatec"
                 className="hidden sm:block"
-                style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1)', opacity: 0.65, marginBottom: 2 }}
+                style={{ height: 22, width: 'auto', opacity: 0.85, marginBottom: 2 }}
               />
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 <Link to="/" style={tabCls(!onPortal && !onAdmin)}>🏆 {t('nav.torneo')}</Link>
