@@ -32,13 +32,21 @@ export default function ScoreInput({ match, onSuccess }) {
     setError(null)
 
     let dbError
+    const isEmailSession = devMode.active && !devMode.pinSession
     if (isPinSession) {
-      // PIN sessions bypass RLS via SECURITY DEFINER RPC
       const res = await supabase.rpc('submit_score_pin', {
         p_match_id: match.id,
         p_pin:      devMode.pin,
         p_games_a:  a,
         p_games_b:  b,
+      })
+      dbError = res.error
+    } else if (isEmailSession) {
+      const res = await supabase.rpc('submit_score_couple_id', {
+        p_match_id:  match.id,
+        p_couple_id: coupleId,
+        p_games_a:   a,
+        p_games_b:   b,
       })
       dbError = res.error
     } else {
