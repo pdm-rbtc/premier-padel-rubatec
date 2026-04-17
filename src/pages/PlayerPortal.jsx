@@ -300,47 +300,40 @@ function AuthenticatedPortal() {
 
   const isEmailSession = devMode.active && !isPinSession
 
-  async function handleConfirm(matchId) {
-    let error
+  async function callConfirmRpc(matchId, action) {
     if (isPinSession) {
-      ;({ error } = await supabase.rpc('confirm_match_pin', {
+      return supabase.rpc('confirm_match_pin', {
         p_match_id: matchId,
         p_pin:      devMode.pin,
-        p_action:   'confirm',
-      }))
-    } else if (isEmailSession) {
-      ;({ error } = await supabase.rpc('confirm_match_couple_id', {
+        p_action:   action,
+      })
+    }
+    if (isEmailSession) {
+      return supabase.rpc('confirm_match_couple_id', {
         p_match_id:  matchId,
         p_couple_id: coupleId,
-        p_action:    'confirm',
-      }))
-    } else {
-      ;({ error } = await supabase.rpc('confirm_match', {
-        p_match_id: matchId,
-        p_actor_id: user.id,
-      }))
+        p_action:    action,
+      })
     }
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'confirmed' } : m))
+    if (action === 'confirm') {
+      return supabase.rpc('confirm_match', {
+        p_match_id: matchId,
+        p_actor_id: user?.id ?? null,
+      })
+    }
+    return supabase.from('matches').update({ status: 'disputed' }).eq('id', matchId)
+  }
+
+  async function handleConfirm(matchId) {
+    const { error } = await callConfirmRpc(matchId, 'confirm')
+    if (error) { console.error('confirm error:', error.message); return }
+    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'confirmed' } : m))
   }
 
   async function handleDispute(matchId) {
-    let error
-    if (isPinSession) {
-      ;({ error } = await supabase.rpc('confirm_match_pin', {
-        p_match_id: matchId,
-        p_pin:      devMode.pin,
-        p_action:   'dispute',
-      }))
-    } else if (isEmailSession) {
-      ;({ error } = await supabase.rpc('confirm_match_couple_id', {
-        p_match_id:  matchId,
-        p_couple_id: coupleId,
-        p_action:    'dispute',
-      }))
-    } else {
-      ;({ error } = await supabase.from('matches').update({ status: 'disputed' }).eq('id', matchId))
-    }
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'disputed' } : m))
+    const { error } = await callConfirmRpc(matchId, 'dispute')
+    if (error) { console.error('dispute error:', error.message); return }
+    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'disputed' } : m))
   }
 
   function handleSignOut() {

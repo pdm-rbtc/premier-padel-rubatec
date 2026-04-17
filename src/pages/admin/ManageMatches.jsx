@@ -237,7 +237,7 @@ function ManageMatchesContent() {
 
     const { error } = await supabase.rpc('admin_resolve_match', {
       p_match_id:  matchId,
-      p_actor_id:  user.id,
+      p_actor_id:  user?.id ?? null,
       p_winner_id: winnerId,
       p_score_a:   scoreA,
       p_score_b:   scoreB,
@@ -251,12 +251,15 @@ function ManageMatchesContent() {
 
   async function adminConfirm(matchId) {
     setResolving(matchId)
-    const { error } = await supabase.rpc('confirm_match', {
-      p_match_id: matchId,
-      p_actor_id: user.id,
-    })
-    setResolving(null)
-    if (!error) setMatches(prev => prev.filter(m => m.id !== matchId))
+    try {
+      const { error } = await supabase.rpc('confirm_match', {
+        p_match_id: matchId,
+        p_actor_id: user?.id ?? null,
+      })
+      if (!error) setMatches(prev => prev.filter(m => m.id !== matchId))
+    } finally {
+      setResolving(null)
+    }
   }
 
   const currentFilter = FILTERS.find(f => f.value === filter)
