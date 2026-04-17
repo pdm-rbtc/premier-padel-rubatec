@@ -273,8 +273,16 @@ function AuthenticatedPortal() {
 
   const isLoading = authLoading || matchLoading
 
-  // Sort by time within each status bucket
-  const byTime = [...matches].sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+  // Sort by scheduled_at; null scheduled_at falls back to time_slot string parsing
+  function matchSortKey(m) {
+    if (m.scheduled_at) return new Date(m.scheduled_at).getTime()
+    if (m.time_slot) {
+      const match = m.time_slot.match(/(\d+):(\d+)/)
+      if (match) return parseInt(match[1]) * 60 + parseInt(match[2])
+    }
+    return Infinity
+  }
+  const byTime = [...matches].sort((a, b) => matchSortKey(a) - matchSortKey(b))
 
   const nextMatch       = byTime.find(m => m.status === 'scheduled')
   const upcomingMatches = byTime.filter(m => m.status === 'scheduled' && m.id !== nextMatch?.id)
